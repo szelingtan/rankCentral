@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import RankCentralLogo from '@/components/RankCentralLogo';
 import { useNavigate } from 'react-router-dom';
+import { FileText, Settings, BarChart3 } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
