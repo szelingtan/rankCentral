@@ -48,19 +48,19 @@ const mockResults = {
       doc1: { id: '1', name: 'Project Proposal A' },
       doc2: { id: '3', name: 'Project Proposal C' },
       winner: '3',
-      reasoning: 'Project Proposal C demonstrates superior clarity of objectives and a more comprehensive analysis of the market opportunity. The document is better structured with clear sections that flow logically. While Proposal A has good insights, Proposal C provides more detailed implementation strategies and addresses potential challenges more thoroughly.'
+      reasoning: "Project Proposal C demonstrates superior clarity of objectives and a more comprehensive analysis of the market opportunity. The document is better structured with clear sections that flow logically. While Proposal A has good insights, Proposal C provides more detailed implementation strategies and addresses potential challenges more thoroughly."
     },
     {
       doc1: { id: '1', name: 'Project Proposal A' },
       doc2: { id: '2', name: 'Project Proposal B' },
       winner: '1',
-      reasoning: 'Project Proposal A presents a more coherent argument with better supporting evidence. The financial projections are more realistic and the timeline is more detailed. Proposal B lacks sufficient detail in the implementation plan and does not address key stakeholder concerns as effectively as Proposal A.'
+      reasoning: "Project Proposal A presents a more coherent argument with better supporting evidence. The financial projections are more realistic and the timeline is more detailed. Proposal B lacks sufficient detail in the implementation plan and does not address key stakeholder concerns as effectively as Proposal A."
     },
     {
       doc1: { id: '2', name: 'Project Proposal B' },
       doc2: { id: '3', name: 'Project Proposal C' },
       winner: '3',
-      reasoning: 'Project Proposal C significantly outperforms Proposal B across all evaluation criteria. The market analysis is more data-driven, the value proposition is clearer, and the execution plan is more detailed with specific milestones. Proposal B's analysis lacks depth and the proposed solution doesn't address the problem statement as effectively.'
+      reasoning: "Project Proposal C significantly outperforms Proposal B across all evaluation criteria. The market analysis is more data-driven, the value proposition is clearer, and the execution plan is more detailed with specific milestones. Proposal B's analysis lacks depth and the proposed solution doesn't address the problem statement as effectively."
     }
   ]
 };
