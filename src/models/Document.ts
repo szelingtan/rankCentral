@@ -41,7 +41,14 @@ const DocumentSchema = new Schema<IDocument>({
   timestamps: true,
 });
 
-// Use a more browser-friendly approach to register models
-const DocumentModel = mongoose.models.Document || mongoose.model<IDocument>('Document', DocumentSchema);
+// Browser-safe model registration
+let DocumentModel: mongoose.Model<IDocument>;
+try {
+  // Check if the model is already registered
+  DocumentModel = mongoose.model<IDocument>('Document');
+} catch (error) {
+  // Model not registered yet, so register it
+  DocumentModel = mongoose.model<IDocument>('Document', DocumentSchema);
+}
 
 export default DocumentModel;

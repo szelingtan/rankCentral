@@ -39,7 +39,14 @@ const EvaluationSchema = new Schema<IEvaluation>({
   timestamps: true,
 });
 
-// Use a more browser-friendly approach to register models
-const Evaluation = mongoose.models.Evaluation || mongoose.model<IEvaluation>('Evaluation', EvaluationSchema);
+// Browser-safe model registration
+let Evaluation: mongoose.Model<IEvaluation>;
+try {
+  // Check if the model is already registered
+  Evaluation = mongoose.model<IEvaluation>('Evaluation');
+} catch (error) {
+  // Model not registered yet, so register it
+  Evaluation = mongoose.model<IEvaluation>('Evaluation', EvaluationSchema);
+}
 
 export default Evaluation;
