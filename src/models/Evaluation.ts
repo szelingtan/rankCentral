@@ -39,4 +39,7 @@ const EvaluationSchema = new Schema<IEvaluation>({
   timestamps: true,
 });
 
-export default mongoose.models.Evaluation || mongoose.model<IEvaluation>('Evaluation', EvaluationSchema);
+// Use a more browser-friendly approach to register models
+const Evaluation = mongoose.models.Evaluation || mongoose.model<IEvaluation>('Evaluation', EvaluationSchema);
+
+export default Evaluation;

@@ -28,4 +28,7 @@ const ProjectSchema = new Schema<IProject>({
   timestamps: true,
 });
 
-export default mongoose.models.Project || mongoose.model<IProject>('Project', ProjectSchema);
+// Use a more browser-friendly approach to register models
+const Project = mongoose.models.Project || mongoose.model<IProject>('Project', ProjectSchema);
+
+export default Project;

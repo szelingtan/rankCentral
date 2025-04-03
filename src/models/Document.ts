@@ -41,4 +41,7 @@ const DocumentSchema = new Schema<IDocument>({
   timestamps: true,
 });
 
-export default mongoose.models.Document || mongoose.model<IDocument>('Document', DocumentSchema);
+// Use a more browser-friendly approach to register models
+const DocumentModel = mongoose.models.Document || mongoose.model<IDocument>('Document', DocumentSchema);
+
+export default DocumentModel;

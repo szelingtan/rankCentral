@@ -37,8 +37,9 @@ export const authenticateUser = async (email: string, password: string) => {
   await connectDB();
   
   try {
-    // Use lean() to get plain objects instead of Mongoose documents
+    // Find user by email - proper Mongoose query
     const user = await User.findOne({ email }).lean();
+    
     if (!user) {
       throw new Error('User not found');
     }
@@ -69,8 +70,9 @@ export const registerUser = async (email: string, password: string) => {
   await connectDB();
   
   try {
-    // Check if user already exists
+    // Check if user already exists - proper Mongoose query
     const existingUser = await User.findOne({ email }).lean();
+    
     if (existingUser) {
       throw new Error('User already exists');
     }
@@ -118,7 +120,9 @@ export const getUserProjects = async (userId: string) => {
   await connectDB();
   
   try {
+    // Proper Mongoose query
     const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 }).lean();
+    
     return projects;
   } catch (error) {
     console.error('Get projects error:', error);
@@ -130,7 +134,9 @@ export const getProjectById = async (projectId: string, userId: string) => {
   await connectDB();
   
   try {
+    // Proper Mongoose query
     const project = await Project.findOne({ _id: projectId, owner: userId }).lean();
+    
     if (!project) {
       throw new Error('Project not found');
     }
@@ -151,8 +157,9 @@ export const uploadDocument = async (
   await connectDB();
   
   try {
-    // Verify the project exists and belongs to user
+    // Verify the project exists and belongs to user - proper Mongoose query
     const project = await Project.findOne({ _id: projectId, owner: userId }).lean();
+    
     if (!project) {
       throw new Error('Project not found');
     }
@@ -177,6 +184,7 @@ export const getProjectDocuments = async (projectId: string, userId: string) => 
   await connectDB();
   
   try {
+    // Proper Mongoose query
     const documents = await Document.find({ 
       project: projectId, 
       owner: userId 
@@ -200,8 +208,9 @@ export const createEvaluation = async (
   await connectDB();
   
   try {
-    // Verify the project exists and belongs to user
+    // Verify the project exists and belongs to user - proper Mongoose query
     const project = await Project.findOne({ _id: projectId, owner: userId }).lean();
+    
     if (!project) {
       throw new Error('Project not found');
     }
@@ -226,6 +235,7 @@ export const getProjectEvaluations = async (projectId: string, userId: string) =
   await connectDB();
   
   try {
+    // Proper Mongoose query
     const evaluations = await Evaluation.find({ 
       project: projectId, 
       owner: userId 
