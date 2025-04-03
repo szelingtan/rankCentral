@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -168,7 +167,7 @@ const Projects = () => {
             {projects.map((project) => (
               <Link 
                 to={`/projects/${project._id.toString()}`} 
-                key={project._id.toString()}
+                key={project._id ? project._id.toString() : `project-${Math.random()}`}
                 className="transition-transform hover:scale-[1.01]"
               >
                 <Card className="shadow-sm h-full hover:shadow-md transition-shadow">
