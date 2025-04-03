@@ -115,7 +115,7 @@ const ProjectDetails = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     const options: Intl.DateTimeFormatOptions = {
       year: 'numeric',
       month: 'short',
@@ -271,7 +271,7 @@ const ProjectDetails = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {documents.map((document) => (
-                  <Card key={document._id} className="shadow-sm hover:shadow-md transition-shadow">
+                  <Card key={document._id.toString()} className="shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-start gap-2 truncate">
                         <FileText className="h-5 w-5 text-brand-primary shrink-0" />
@@ -348,7 +348,7 @@ const ProjectDetails = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {evaluations.map((evaluation) => (
-                  <Card key={evaluation._id} className="shadow-sm hover:shadow-md transition-shadow">
+                  <Card key={evaluation._id.toString()} className="shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-start gap-2 truncate">
                         <File className="h-5 w-5 text-brand-primary shrink-0" />

@@ -14,7 +14,7 @@ export const authenticateUser = async (email: string, password: string) => {
   await connectDB();
   
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).exec();
     if (!user) {
       throw new Error('User not found');
     }
@@ -25,12 +25,12 @@ export const authenticateUser = async (email: string, password: string) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id.toString(), email: user.email },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    return { token, user: { id: user._id, email: user.email } };
+    return { token, user: { id: user._id.toString(), email: user.email } };
   } catch (error) {
     console.error('Authentication error:', error);
     throw error;
@@ -43,7 +43,7 @@ export const registerUser = async (email: string, password: string) => {
   
   try {
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).exec();
     if (existingUser) {
       throw new Error('User already exists');
     }
@@ -53,12 +53,12 @@ export const registerUser = async (email: string, password: string) => {
     await user.save();
 
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id.toString(), email: user.email },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    return { token, user: { id: user._id, email: user.email } };
+    return { token, user: { id: user._id.toString(), email: user.email } };
   } catch (error) {
     console.error('Registration error:', error);
     throw error;
@@ -98,7 +98,7 @@ export const getUserProjects = async (userId: string) => {
   await connectDB();
   
   try {
-    const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 });
+    const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 }).exec();
     return projects;
   } catch (error) {
     console.error('Get projects error:', error);
@@ -110,7 +110,7 @@ export const getProjectById = async (projectId: string, userId: string) => {
   await connectDB();
   
   try {
-    const project = await Project.findOne({ _id: projectId, owner: userId });
+    const project = await Project.findOne({ _id: projectId, owner: userId }).exec();
     if (!project) {
       throw new Error('Project not found');
     }
@@ -132,7 +132,7 @@ export const uploadDocument = async (
   
   try {
     // Verify the project exists and belongs to user
-    const project = await Project.findOne({ _id: projectId, owner: userId });
+    const project = await Project.findOne({ _id: projectId, owner: userId }).exec();
     if (!project) {
       throw new Error('Project not found');
     }
@@ -160,7 +160,7 @@ export const getProjectDocuments = async (projectId: string, userId: string) => 
     const documents = await Document.find({ 
       project: projectId, 
       owner: userId 
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).exec();
     
     return documents;
   } catch (error) {
@@ -181,7 +181,7 @@ export const createEvaluation = async (
   
   try {
     // Verify the project exists and belongs to user
-    const project = await Project.findOne({ _id: projectId, owner: userId });
+    const project = await Project.findOne({ _id: projectId, owner: userId }).exec();
     if (!project) {
       throw new Error('Project not found');
     }
@@ -209,7 +209,7 @@ export const getProjectEvaluations = async (projectId: string, userId: string) =
     const evaluations = await Evaluation.find({ 
       project: projectId, 
       owner: userId 
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).exec();
     
     return evaluations;
   } catch (error) {
