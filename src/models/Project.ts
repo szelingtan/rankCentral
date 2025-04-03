@@ -28,7 +28,14 @@ const ProjectSchema = new Schema<IProject>({
   timestamps: true,
 });
 
-// Use a more browser-friendly approach to register models
-const Project = mongoose.models.Project || mongoose.model<IProject>('Project', ProjectSchema);
+// Browser-safe model registration
+let Project: mongoose.Model<IProject>;
+try {
+  // Check if the model is already registered
+  Project = mongoose.model<IProject>('Project');
+} catch (error) {
+  // Model not registered yet, so register it
+  Project = mongoose.model<IProject>('Project', ProjectSchema);
+}
 
 export default Project;

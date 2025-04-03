@@ -46,7 +46,14 @@ UserSchema.methods.comparePassword = async function(candidatePassword: string): 
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Use a more browser-friendly approach to register models
-const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+// Browser-safe model registration
+let User: mongoose.Model<IUser>;
+try {
+  // Check if the model is already registered
+  User = mongoose.model<IUser>('User');
+} catch (error) {
+  // Model not registered yet, so register it
+  User = mongoose.model<IUser>('User', UserSchema);
+}
 
 export default User;

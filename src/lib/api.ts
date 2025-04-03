@@ -37,8 +37,8 @@ export const authenticateUser = async (email: string, password: string) => {
   await connectDB();
   
   try {
-    // Find user by email - proper Mongoose query
-    const user = await User.findOne({ email }).lean();
+    // Find user by email with exec() to properly handle the promise
+    const user = await User.findOne({ email }).exec();
     
     if (!user) {
       throw new Error('User not found');
@@ -46,8 +46,7 @@ export const authenticateUser = async (email: string, password: string) => {
 
     // In a real application, you would properly compare hashed passwords
     // This is simplified for demonstration purposes
-    const userInstance = new User(user);
-    const isMatch = await userInstance.comparePassword(password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       throw new Error('Invalid credentials');
     }
@@ -70,8 +69,8 @@ export const registerUser = async (email: string, password: string) => {
   await connectDB();
   
   try {
-    // Check if user already exists - proper Mongoose query
-    const existingUser = await User.findOne({ email }).lean();
+    // Check if user already exists with exec() to properly handle the promise
+    const existingUser = await User.findOne({ email }).exec();
     
     if (existingUser) {
       throw new Error('User already exists');
@@ -120,8 +119,8 @@ export const getUserProjects = async (userId: string) => {
   await connectDB();
   
   try {
-    // Proper Mongoose query
-    const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 }).lean();
+    // Use exec() to properly handle the promise
+    const projects = await Project.find({ owner: userId }).sort({ createdAt: -1 }).exec();
     
     return projects;
   } catch (error) {
@@ -134,8 +133,8 @@ export const getProjectById = async (projectId: string, userId: string) => {
   await connectDB();
   
   try {
-    // Proper Mongoose query
-    const project = await Project.findOne({ _id: projectId, owner: userId }).lean();
+    // Use exec() to properly handle the promise
+    const project = await Project.findOne({ _id: projectId, owner: userId }).exec();
     
     if (!project) {
       throw new Error('Project not found');
@@ -157,8 +156,8 @@ export const uploadDocument = async (
   await connectDB();
   
   try {
-    // Verify the project exists and belongs to user - proper Mongoose query
-    const project = await Project.findOne({ _id: projectId, owner: userId }).lean();
+    // Verify the project exists and belongs to user with exec() to properly handle the promise
+    const project = await Project.findOne({ _id: projectId, owner: userId }).exec();
     
     if (!project) {
       throw new Error('Project not found');
@@ -184,11 +183,11 @@ export const getProjectDocuments = async (projectId: string, userId: string) => 
   await connectDB();
   
   try {
-    // Proper Mongoose query
+    // Use exec() to properly handle the promise
     const documents = await Document.find({ 
       project: projectId, 
       owner: userId 
-    }).sort({ createdAt: -1 }).lean();
+    }).sort({ createdAt: -1 }).exec();
     
     return documents;
   } catch (error) {
@@ -208,8 +207,8 @@ export const createEvaluation = async (
   await connectDB();
   
   try {
-    // Verify the project exists and belongs to user - proper Mongoose query
-    const project = await Project.findOne({ _id: projectId, owner: userId }).lean();
+    // Verify the project exists and belongs to user with exec() to properly handle the promise
+    const project = await Project.findOne({ _id: projectId, owner: userId }).exec();
     
     if (!project) {
       throw new Error('Project not found');
@@ -235,11 +234,11 @@ export const getProjectEvaluations = async (projectId: string, userId: string) =
   await connectDB();
   
   try {
-    // Proper Mongoose query
+    // Use exec() to properly handle the promise
     const evaluations = await Evaluation.find({ 
       project: projectId, 
       owner: userId 
-    }).sort({ createdAt: -1 }).lean();
+    }).sort({ createdAt: -1 }).exec();
     
     return evaluations;
   } catch (error) {
