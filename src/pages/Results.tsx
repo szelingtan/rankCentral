@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import PastReports from '@/components/PastReports';
-import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import apiClient from '@/lib/api-client';
 
 type EvaluationReport = {
   timestamp: string;
@@ -23,9 +22,6 @@ const Results = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Get current window location and construct dynamic backend URL
-  const backendBaseUrl = window.location.origin;
-  
   const fetchReports = async () => {
     setIsLoading(true);
     setBackendError(null);
@@ -34,7 +30,7 @@ const Results = () => {
       // Check if backend is available first
       let healthCheck = false;
       try {
-        await axios.get(`${backendBaseUrl}/api/health`, { timeout: 3000 });
+        await apiClient.get('/health');
         healthCheck = true;
       } catch (error) {
         // Health check failed, backend is down
@@ -52,7 +48,7 @@ const Results = () => {
       
       // If health check passed, get the reports
       if (healthCheck) {
-        const response = await axios.get(`${backendBaseUrl}/api/report-history`);
+        const response = await apiClient.get('/report-history');
         setPastReports(Array.isArray(response.data) ? response.data : []);
         
         if (response.data.length === 0) {
@@ -100,7 +96,7 @@ const Results = () => {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
             <strong className="font-bold">Backend connection error: </strong>
             <span className="block sm:inline">{backendError}</span>
-            <span className="block mt-2">Make sure the backend server is running on port 5002.</span>
+            <span className="block mt-2">Make sure the backend server is running on the configured port.</span>
           </div>
         )}
 

@@ -16,6 +16,7 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
+# Allow CORS for all routes to ensure frontend can communicate with backend
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 # Use a temporary directory for PDF storage
@@ -290,6 +291,9 @@ if __name__ == '__main__':
     # Get port from environment variable or use default
     port = int(os.environ.get('PORT', 5002))
     
+    print(f"Starting backend server on port {port}...")
+    print(f"API will be available at: http://localhost:{port}/api/health")
+    print(f"Temporary uploads directory: {UPLOAD_FOLDER}")
+    
     # Use the host 0.0.0.0 to make the server externally visible
     app.run(host='0.0.0.0', port=port, debug=True)
-    print(f"Backend server running on port {port}")

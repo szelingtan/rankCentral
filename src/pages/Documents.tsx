@@ -11,8 +11,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileUp, Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CriteriaForm from '@/components/CriteriaForm';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '@/lib/api-client';
 
 type Document = {
   id: string;
@@ -78,7 +78,7 @@ const Documents = () => {
 
   const checkBackendStatus = async () => {
     try {
-      const response = await axios.get(`${backendBaseUrl}/api/health`, { timeout: 5000 });
+      const response = await apiClient.get('/health');
       if (response.data.status === 'healthy') {
         setBackendStatus('online');
       } else {
@@ -144,11 +144,10 @@ const Documents = () => {
         formData.append('files[]', file);
       });
       
-      const response = await axios.post(`${backendBaseUrl}/api/upload-pdfs`, formData, {
+      const response = await apiClient.post('/upload-pdfs', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-        },
-        timeout: 30000,
+        }
       });
 
       if (response.data.files) {
@@ -276,9 +275,7 @@ const Documents = () => {
         evaluation_method: evaluationMethod
       };
 
-      const response = await axios.post(`${backendBaseUrl}/api/compare-documents`, requestData, {
-        timeout: 60000,
-      });
+      const response = await apiClient.post('/compare-documents', requestData);
       
       if (response.data) {
         toast({

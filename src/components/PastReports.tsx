@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import apiClient from '@/lib/api-client';
 
 type EvaluationReport = {
   timestamp: string;
@@ -17,17 +18,17 @@ type EvaluationReport = {
 
 type PastReportsProps = {
   reports: EvaluationReport[];
-  backendBaseUrl: string;
 };
 
-const PastReports = ({ reports, backendBaseUrl }: PastReportsProps) => {
+const PastReports = ({ reports }: PastReportsProps) => {
   const { toast } = useToast();
 
   const downloadReport = async (timestamp?: string) => {
     try {
+      // For download, we need to open in a new window since it's a file
       const url = timestamp 
-        ? `${backendBaseUrl}/api/download-report/${timestamp}` 
-        : `${backendBaseUrl}/api/download-report`;
+        ? `/api/download-report/${timestamp}`
+        : `/api/download-report`;
       
       window.open(url, '_blank');
     } catch (error) {
