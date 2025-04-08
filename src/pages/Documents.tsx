@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,11 +10,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileUp, Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { toast } from 'sonner';
-import CriteriaForm from '@/components/CriteriaForm';
 import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
+import CriteriaForm from '@/components/CriteriaForm';
 
 type Document = {
   id: string;
@@ -56,6 +55,26 @@ const defaultCriteria: Criterion[] = [
   },
 ];
 
+// Helper function to prevent duplicate toasts
+const shownToasts = new Set();
+const showUniqueToast = (message, type = 'error') => {
+  if (shownToasts.has(message)) return;
+  
+  shownToasts.add(message);
+  if (type === 'error') {
+    toast.error(message);
+  } else if (type === 'success') {
+    toast.success(message);
+  } else if (type === 'loading') {
+    toast.loading(message);
+  }
+  
+  // Remove from tracking after 5 seconds
+  setTimeout(() => {
+    shownToasts.delete(message);
+  }, 5000);
+};
+
 const Documents = () => {
   const [documents, setDocuments] = useState<Document[]>([
     { id: '1', name: 'Document 1', content: '' },
@@ -69,7 +88,6 @@ const Documents = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const navigate = useNavigate();
-  const { toast: uiToast } = useToast();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
   
   useEffect(() => {
@@ -88,22 +106,12 @@ const Documents = () => {
       } else {
         console.error('Backend health check failed:', health.error);
         setBackendStatus('offline');
-        toast.error('Backend server is not available. Please start the backend server.');
-        uiToast({
-          title: "Backend connection issue",
-          description: "Cannot connect to the backend server. Make sure it's running.",
-          variant: "destructive",
-        });
+        showUniqueToast('Backend server is not available. Please start the backend server.');
       }
     } catch (error) {
       console.error("Backend health check error:", error);
       setBackendStatus('offline');
-      toast.error('Backend server is not available. Please start the backend server.');
-      uiToast({
-        title: "Backend connection issue",
-        description: "Cannot connect to the backend server. Make sure it's running.",
-        variant: "destructive",
-      });
+      showUniqueToast('Backend server is not available. Please start the backend server.');
     }
   };
 
@@ -117,7 +125,7 @@ const Documents = () => {
 
   const removeDocument = (id: string) => {
     if (documents.length <= 2) {
-      toast.error('Cannot remove. You need at least two documents for comparison.');
+      showUniqueToast('Cannot remove. You need at least two documents for comparison.');
       return;
     }
     setDocuments(documents.filter((doc) => doc.id !== id));
@@ -156,11 +164,7 @@ const Documents = () => {
       });
 
       if (response.data.files) {
-        toast.success(`Successfully uploaded ${response.data.files.length} files.`);
-        uiToast({
-          title: "Files uploaded",
-          description: `Successfully uploaded ${response.data.files.length} files.`,
-        });
+        showUniqueToast(`Successfully uploaded ${response.data.files.length} files.`, 'success');
         
         const newDocuments = [...documents];
         response.data.files.forEach((file: string, index: number) => {
@@ -178,13 +182,7 @@ const Documents = () => {
       }
     } catch (error: any) {
       console.error('Error uploading files:', error);
-      
-      toast.error('Upload failed. Make sure the backend server is running.');
-      uiToast({
-        title: "Upload failed",
-        description: error.message || "There was an error uploading your files.",
-        variant: "destructive",
-      });
+      showUniqueToast('Upload failed. Make sure the backend server is running.');
     } finally {
       setIsLoading(false);
     }
@@ -206,11 +204,7 @@ const Documents = () => {
       const content = e.target?.result as string;
       updateDocument(docId, 'content', content);
       
-      toast.success(`${file.name} has been loaded.`);
-      uiToast({
-        title: "File uploaded",
-        description: `${file.name} has been loaded.`,
-      });
+      showUniqueToast(`${file.name} has been loaded.`, 'success');
     };
     reader.readAsText(file);
   };
@@ -218,35 +212,20 @@ const Documents = () => {
   const handleSubmit = async () => {
     const emptyDocs = documents.filter(doc => !doc.content.trim());
     if (emptyDocs.length > 0) {
-      toast.error('Please fill in content for all documents.');
-      uiToast({
-        title: "Empty documents",
-        description: "Please fill in content for all documents.",
-        variant: "destructive",
-      });
+      showUniqueToast("Please fill in content for all documents.");
       return;
     }
 
     if (evaluationMethod === 'criteria' && useCustomCriteria) {
       const invalidCriteria = criteria.filter(c => !c.name.trim());
       if (invalidCriteria.length > 0) {
-        toast.error('Please provide a name for all criteria.');
-        uiToast({
-          title: "Invalid criteria",
-          description: "Please provide a name for all criteria.",
-          variant: "destructive",
-        });
+        showUniqueToast('Please provide a name for all criteria.');
         return;
       }
     }
 
     if (evaluationMethod === 'prompt' && !customPrompt.trim()) {
-      toast.error('Please provide an evaluation prompt.');
-      uiToast({
-        title: "Empty prompt",
-        description: "Please provide an evaluation prompt.",
-        variant: "destructive",
-      });
+      showUniqueToast('Please provide an evaluation prompt.');
       return;
     }
 
@@ -254,34 +233,25 @@ const Documents = () => {
       try {
         await checkBackendStatus();
         if (backendStatus === 'offline') {
-          toast.error('Cannot connect to the backend server.');
-          uiToast({
-            title: "Backend unavailable",
-            description: "Cannot connect to the backend server.",
-            variant: "destructive",
-          });
+          showUniqueToast('Cannot connect to the backend server.');
           return;
         }
       } catch (error) {
-        toast.error('Cannot connect to the backend server.');
-        uiToast({
-          title: "Backend connection failed",
-          description: "Cannot connect to the backend server.",
-          variant: "destructive",
-        });
+        showUniqueToast('Cannot connect to the backend server.');
         return;
       }
     }
 
     setIsLoading(true);
-    toast.loading('Processing documents. This may take a moment.');
-    uiToast({
-      title: "Processing documents",
-      description: "Your documents are being analyzed. This may take a moment.",
-    });
+    showUniqueToast('Processing documents. This may take a moment.', 'loading');
 
     try {
       const requestData = {
+        documents: documents.map(doc => ({
+          id: doc.id,
+          name: doc.name,
+          content: doc.content
+        })),
         compare_method: 'mergesort',
         criteria: evaluationMethod === 'criteria' 
           ? (useCustomCriteria ? criteria : defaultCriteria)
@@ -294,23 +264,12 @@ const Documents = () => {
       const response = await apiClient.post('/compare-documents', requestData);
       
       if (response.data) {
-        toast.success('Analysis complete. Your comparison report is ready.');
-        uiToast({
-          title: "Analysis complete",
-          description: "Your comparison report is ready.",
-        });
-        
+        showUniqueToast('Analysis complete. Your comparison report is ready.', 'success');
         navigate('/results');
       }
     } catch (error: any) {
       console.error('Error comparing documents:', error);
-      
-      toast.error('Comparison failed. Make sure the backend server is running.');
-      uiToast({
-        title: "Comparison failed",
-        description: error.message || "There was an error analyzing your documents.",
-        variant: "destructive",
-      });
+      showUniqueToast(error.message || "There was an error analyzing your documents.");
     } finally {
       setIsLoading(false);
     }
@@ -320,23 +279,6 @@ const Documents = () => {
     <Layout>
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">Document Comparison</h1>
-        
-        {backendStatus === 'offline' && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
-            <strong className="font-bold">Backend not connected: </strong> 
-            <span className="block sm:inline">Make sure the backend server is running.</span>
-            <p className="mt-2">1. Run <code className="bg-gray-200 px-1 py-0.5 rounded">./run_backend.sh</code> or <code className="bg-gray-200 px-1 py-0.5 rounded">python backend/api.py</code> in your terminal</p>
-            <p className="mt-1">2. Backend URL: <code className="bg-gray-200 px-1 py-0.5 rounded">{apiUrl}</code></p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2" 
-              onClick={checkBackendStatus}
-            >
-              Retry Connection
-            </Button>
-          </div>
-        )}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">

@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -34,7 +35,7 @@ def health_check():
     """Health check endpoint to verify backend is running properly"""
     try:
         # Test MongoDB connection if available
-        db_status = "connected" if db else "not connected"
+        db_status = "connected" if db is not None else "not connected"
         
         # Check if PDF upload folder is accessible
         folder_status = "accessible" if os.access(app.config['UPLOAD_FOLDER'], os.W_OK) else "not accessible"
@@ -99,7 +100,7 @@ def upload_pdfs():
 
 @app.route('/api/compare-documents', methods=['POST'])
 def compare_documents():
-    """Endpoint to compare uploaded PDFs using specified criteria or a custom prompt"""
+    """Endpoint to compare documents using specified criteria or a custom prompt"""
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -108,10 +109,16 @@ def compare_documents():
     comparison_method = data.get('compare_method', 'mergesort')
     evaluation_method = data.get('evaluation_method', 'criteria')
     custom_prompt = data.get('custom_prompt', '')
+    documents_data = data.get('documents', [])
     
-    # Check if PDFs are uploaded
-    if not os.path.exists(app.config['UPLOAD_FOLDER']) or len(os.listdir(app.config['UPLOAD_FOLDER'])) < 2:
-        return jsonify({"error": "Upload at least two PDF files before comparison"}), 400
+    # Check if documents are provided
+    if not documents_data or len(documents_data) < 2:
+        # Check if PDFs are uploaded as fallback
+        if not os.path.exists(app.config['UPLOAD_FOLDER']) or len(os.listdir(app.config['UPLOAD_FOLDER'])) < 2:
+            return jsonify({"error": "Provide at least two documents for comparison"}), 400
+        use_uploaded_pdfs = True
+    else:
+        use_uploaded_pdfs = False
     
     try:
         # Get the API key from environment
@@ -137,11 +144,15 @@ def compare_documents():
                 "is_custom_prompt": True
             }]
         
-        # Load PDFs
-        pdf_contents = pdf_processor.load_pdfs()
-        
-        # Extract criteria sections from PDFs
-        pdf_processor.extract_criteria_sections()
+        # Get the document contents
+        if use_uploaded_pdfs:
+            # Load PDFs from upload folder
+            pdf_contents = pdf_processor.load_pdfs()
+        else:
+            # Use the document contents from the request
+            pdf_contents = {}
+            for doc in documents_data:
+                pdf_contents[doc['name']] = doc['content']
         
         # Get criteria
         criteria = criteria_manager.criteria
@@ -163,7 +174,7 @@ def compare_documents():
         report_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results)
         
         # Store report metadata in MongoDB
-        if db:
+        if db is not None:
             try:
                 # Store only metadata about the report
                 report_data = {
@@ -208,6 +219,7 @@ def compare_documents():
     except Exception as e:
         return jsonify({"error": f"Error during comparison: {str(e)}"}), 500
 
+# ... keep existing code (from @app.route('/api/download-report', methods=['GET']) through the end)
 @app.route('/api/download-report', methods=['GET'])
 def download_report():
     """Endpoint to download the generated Excel report"""
@@ -249,9 +261,9 @@ def download_report():
 def get_report_history():
     """Endpoint to get the history of past reports (up to 3)"""
     try:
-        if not db:
+        if db is None:
             return jsonify({"error": "Database not connected"}), 500
-        
+
         # Get reports collection
         reports_collection = db["reports"]
         
@@ -281,7 +293,7 @@ def get_report_history():
 def download_specific_report(timestamp):
     """Endpoint to download a specific report by timestamp"""
     try:
-        if not db:
+        if db is None:
             return jsonify({"error": "Database not connected"}), 500
         
         # Get reports collection
