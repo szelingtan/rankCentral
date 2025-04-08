@@ -23,8 +23,8 @@ const Results = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Get the current host to construct backend URL
-  const backendBaseUrl = `${window.location.protocol}//${window.location.hostname}:5002`;
+  // Get current window location and construct dynamic backend URL
+  const backendBaseUrl = window.location.origin;
   
   const fetchReports = async () => {
     setIsLoading(true);
@@ -44,7 +44,7 @@ const Results = () => {
         setIsLoading(false);
         toast({
           title: "Backend unavailable",
-          description: `Cannot connect to the backend server. Make sure it's running on port 5002.`,
+          description: `Cannot connect to the backend server.`,
           variant: "destructive",
         });
         return;
@@ -68,7 +68,7 @@ const Results = () => {
       setBackendError('Error loading reports from backend.');
       toast({
         title: "Unable to load reports",
-        description: `There was an error loading past reports. Make sure the backend server is running on port 5002.`,
+        description: `There was an error loading past reports. Make sure the backend server is running.`,
         variant: "destructive",
       });
     } finally {
