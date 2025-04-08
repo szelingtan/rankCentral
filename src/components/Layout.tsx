@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import RankCentralLogo from './RankCentralLogo';
 import { Button } from '@/components/ui/button';
-import { BarChart3, FileText, Settings, Home, Compare } from 'lucide-react';
+import { BarChart3, FileText, Settings, Home, GitCompare } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -32,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               to="/documents" 
               className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:text-brand-primary hover:bg-brand-light"
             >
-              <Compare className="mr-3 h-5 w-5 text-gray-500" />
+              <GitCompare className="mr-3 h-5 w-5 text-gray-500" />
               Comparison
             </Link>
             <Link 
@@ -60,7 +59,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Link>
         <div className="flex space-x-2">
           <Button variant="ghost" size="icon">
-            <Compare className="h-5 w-5" />
+            <GitCompare className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon">
             <BarChart3 className="h-5 w-5" />
