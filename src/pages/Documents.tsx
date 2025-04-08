@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -107,7 +106,7 @@ const Documents = () => {
         formData.append('files[]', file);
       });
       
-      const response = await axios.post('/api/upload-pdfs', formData, {
+      const response = await axios.post('http://localhost:5002/api/upload-pdfs', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -119,15 +118,14 @@ const Documents = () => {
           description: `Successfully uploaded ${response.data.files.length} files.`,
         });
         
-        // Create new document entries for each uploaded file
         const newDocuments = [...documents];
         response.data.files.forEach((file: any, index: number) => {
-          if (documents.length + index < 10) { // Limit to a reasonable number
+          if (documents.length + index < 10) {
             const newId = (documents.length + index + 1).toString();
             newDocuments.push({
               id: newId,
               name: `Document ${newId}`,
-              content: file.content || '', // If API returns content
+              content: file.content || '',
             });
           }
         });
@@ -138,7 +136,7 @@ const Documents = () => {
       console.error('Error uploading files:', error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your files.",
+        description: "There was an error uploading your files. Make sure the backend server is running at http://localhost:5002.",
         variant: "destructive",
       });
     } finally {
@@ -201,7 +199,7 @@ const Documents = () => {
         evaluation_method: evaluationMethod
       };
 
-      const response = await axios.post('/api/compare-documents', requestData);
+      const response = await axios.post('http://localhost:5002/api/compare-documents', requestData);
       
       if (response.data) {
         toast({
@@ -209,14 +207,13 @@ const Documents = () => {
           description: "Your comparison report is ready.",
         });
         
-        // Redirect to results page
         navigate('/results');
       }
     } catch (error) {
       console.error('Error comparing documents:', error);
       toast({
         title: "Comparison failed",
-        description: "There was an error analyzing your documents.",
+        description: "There was an error analyzing your documents. Make sure the backend server is running at http://localhost:5002.",
         variant: "destructive",
       });
     } finally {
