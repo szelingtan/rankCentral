@@ -17,16 +17,17 @@ type EvaluationReport = {
 
 type PastReportsProps = {
   reports: EvaluationReport[];
+  backendBaseUrl: string;
 };
 
-const PastReports = ({ reports }: PastReportsProps) => {
+const PastReports = ({ reports, backendBaseUrl }: PastReportsProps) => {
   const { toast } = useToast();
 
   const downloadReport = async (timestamp?: string) => {
     try {
       const url = timestamp 
-        ? `/api/download-report/${timestamp}` 
-        : '/api/download-report';
+        ? `${backendBaseUrl}/api/download-report/${timestamp}` 
+        : `${backendBaseUrl}/api/download-report`;
       
       window.open(url, '_blank');
     } catch (error) {

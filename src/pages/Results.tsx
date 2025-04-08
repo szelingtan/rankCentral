@@ -23,6 +23,9 @@ const Results = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
   const { toast } = useToast();
   
+  // Get the current host to construct backend URL
+  const backendBaseUrl = `${window.location.protocol}//${window.location.hostname}:5002`;
+  
   const fetchReports = async () => {
     setIsLoading(true);
     setBackendError(null);
@@ -31,7 +34,7 @@ const Results = () => {
       // Check if backend is available first
       let healthCheck = false;
       try {
-        await axios.get('http://localhost:5002/api/health', { timeout: 3000 });
+        await axios.get(`${backendBaseUrl}/api/health`, { timeout: 3000 });
         healthCheck = true;
       } catch (error) {
         // Health check failed, backend is down
@@ -41,7 +44,7 @@ const Results = () => {
         setIsLoading(false);
         toast({
           title: "Backend unavailable",
-          description: "Cannot connect to the backend server. Make sure it's running at http://localhost:5002.",
+          description: `Cannot connect to the backend server. Make sure it's running on port 5002.`,
           variant: "destructive",
         });
         return;
@@ -49,7 +52,7 @@ const Results = () => {
       
       // If health check passed, get the reports
       if (healthCheck) {
-        const response = await axios.get('http://localhost:5002/api/report-history');
+        const response = await axios.get(`${backendBaseUrl}/api/report-history`);
         setPastReports(Array.isArray(response.data) ? response.data : []);
         
         if (response.data.length === 0) {
@@ -65,7 +68,7 @@ const Results = () => {
       setBackendError('Error loading reports from backend.');
       toast({
         title: "Unable to load reports",
-        description: "There was an error loading past reports. Make sure the backend server is running at http://localhost:5002.",
+        description: `There was an error loading past reports. Make sure the backend server is running on port 5002.`,
         variant: "destructive",
       });
     } finally {
@@ -97,7 +100,7 @@ const Results = () => {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
             <strong className="font-bold">Backend connection error: </strong>
             <span className="block sm:inline">{backendError}</span>
-            <span className="block mt-2">Make sure the backend server is running at http://localhost:5002.</span>
+            <span className="block mt-2">Make sure the backend server is running on port 5002.</span>
           </div>
         )}
 
@@ -108,7 +111,7 @@ const Results = () => {
               <p className="text-gray-600">Loading reports...</p>
             </div>
           ) : pastReports.length > 0 ? (
-            <PastReports reports={pastReports} />
+            <PastReports reports={pastReports} backendBaseUrl={backendBaseUrl} />
           ) : !backendError ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <p className="text-lg text-gray-600">No comparison reports found</p>
