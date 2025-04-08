@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -288,6 +287,9 @@ def get_default_criteria():
     return jsonify(criteria_manager.default_criteria)
 
 if __name__ == '__main__':
-    # Get port from environment variable or use 5000 as default
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    # Get port from environment variable or use default
+    port = int(os.environ.get('PORT', 5002))
+    
+    # Use the host 0.0.0.0 to make the server externally visible
+    app.run(host='0.0.0.0', port=port, debug=True)
+    print(f"Backend server running on port {port}")
