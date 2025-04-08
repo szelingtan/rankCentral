@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,8 +66,37 @@ const Documents = () => {
   const [evaluationMethod, setEvaluationMethod] = useState('criteria');
   const [customPrompt, setCustomPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    checkBackendStatus();
+  }, []);
+
+  const checkBackendStatus = async () => {
+    try {
+      const response = await axios.get('http://localhost:5002/api/health', { timeout: 5000 });
+      if (response.data.status === 'healthy') {
+        setBackendStatus('online');
+      } else {
+        setBackendStatus('offline');
+        toast({
+          title: "Backend connection issue",
+          description: "The backend server is not responding correctly. Make sure it's running at http://localhost:5002.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Backend health check failed:", error);
+      setBackendStatus('offline');
+      toast({
+        title: "Backend connection issue",
+        description: "Cannot connect to the backend server. Make sure it's running at http://localhost:5002.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const addDocument = () => {
     const newId = (documents.length + 1).toString();
@@ -101,6 +130,13 @@ const Documents = () => {
     setIsLoading(true);
     
     try {
+      if (backendStatus === 'offline') {
+        await checkBackendStatus();
+        if (backendStatus === 'offline') {
+          throw new Error("Backend server is not available");
+        }
+      }
+      
       const formData = new FormData();
       files.forEach(file => {
         formData.append('files[]', file);
@@ -110,6 +146,7 @@ const Documents = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 30000,
       });
 
       if (response.data.files) {
@@ -120,8 +157,8 @@ const Documents = () => {
         
         const newDocuments = [...documents];
         response.data.files.forEach((file: any, index: number) => {
-          if (documents.length + index < 10) {
-            const newId = (documents.length + index + 1).toString();
+          if (newDocuments.length + index < 10) {
+            const newId = (newDocuments.length + index + 1).toString();
             newDocuments.push({
               id: newId,
               name: `Document ${newId}`,
@@ -149,6 +186,23 @@ const Documents = () => {
     if (files && files.length > 0) {
       uploadFiles(Array.from(files));
     }
+  };
+
+  const handleDocumentUpload = (docId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      updateDocument(docId, 'content', content);
+      
+      toast({
+        title: "File uploaded",
+        description: `${file.name} has been loaded.`,
+      });
+    };
+    reader.readAsText(file);
   };
 
   const handleSubmit = async () => {
@@ -183,6 +237,27 @@ const Documents = () => {
       return;
     }
 
+    if (backendStatus === 'offline') {
+      try {
+        await checkBackendStatus();
+        if (backendStatus === 'offline') {
+          toast({
+            title: "Backend unavailable",
+            description: "Cannot connect to the backend server. Please check that it's running at http://localhost:5002.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        toast({
+          title: "Backend connection failed",
+          description: "Cannot connect to the backend server. Please check that it's running at http://localhost:5002.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
     toast({
       title: "Processing documents",
@@ -199,7 +274,9 @@ const Documents = () => {
         evaluation_method: evaluationMethod
       };
 
-      const response = await axios.post('http://localhost:5002/api/compare-documents', requestData);
+      const response = await axios.post('http://localhost:5002/api/compare-documents', requestData, {
+        timeout: 60000,
+      });
       
       if (response.data) {
         toast({
@@ -221,27 +298,25 @@ const Documents = () => {
     }
   };
 
-  const handleDocumentUpload = (docId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      updateDocument(docId, 'content', content);
-      
-      toast({
-        title: "File uploaded",
-        description: `${file.name} has been loaded.`,
-      });
-    };
-    reader.readAsText(file);
-  };
-
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">Document Comparison</h1>
+        
+        {backendStatus === 'offline' && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
+            <strong className="font-bold">Backend not connected: </strong>
+            <span className="block sm:inline">Make sure the backend server is running at http://localhost:5002.</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2" 
+              onClick={checkBackendStatus}
+            >
+              Retry Connection
+            </Button>
+          </div>
+        )}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">

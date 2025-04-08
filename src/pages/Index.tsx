@@ -30,7 +30,7 @@ const Index = () => {
             Document Ranking Made <span className="text-brand-primary">Simple</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto">
-            Compare and rank documents based on customizable criteria using advanced AI technology
+            Compare and rank documents based on customizable criteria or prompts with Artificial Intelligence
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button 

@@ -4,6 +4,8 @@ import Layout from '@/components/Layout';
 import PastReports from '@/components/PastReports';
 import axios from 'axios';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 type EvaluationReport = {
   timestamp: string;
@@ -17,37 +19,102 @@ type EvaluationReport = {
 
 const Results = () => {
   const [pastReports, setPastReports] = useState<EvaluationReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [backendError, setBackendError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  useEffect(() => {
-    const fetchReports = async () => {
+  const fetchReports = async () => {
+    setIsLoading(true);
+    setBackendError(null);
+    
+    try {
+      // Check if backend is available first
+      let healthCheck = false;
       try {
-        // Use the correct API URL with the full path including the host
-        const response = await axios.get('http://localhost:5002/api/report-history');
-        setPastReports(Array.isArray(response.data) ? response.data : []);
+        await axios.get('http://localhost:5002/api/health', { timeout: 3000 });
+        healthCheck = true;
       } catch (error) {
-        console.error('Error fetching reports:', error);
+        // Health check failed, backend is down
+        console.error('Backend health check failed:', error);
+        setBackendError('Cannot connect to backend server.');
         setPastReports([]);
+        setIsLoading(false);
         toast({
-          title: "Unable to load reports",
-          description: "There was an error loading past reports. Make sure the backend server is running at http://localhost:5002.",
+          title: "Backend unavailable",
+          description: "Cannot connect to the backend server. Make sure it's running at http://localhost:5002.",
           variant: "destructive",
         });
+        return;
       }
-    };
+      
+      // If health check passed, get the reports
+      if (healthCheck) {
+        const response = await axios.get('http://localhost:5002/api/report-history');
+        setPastReports(Array.isArray(response.data) ? response.data : []);
+        
+        if (response.data.length === 0) {
+          toast({
+            title: "No reports found",
+            description: "You haven't generated any comparison reports yet.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      setPastReports([]);
+      setBackendError('Error loading reports from backend.');
+      toast({
+        title: "Unable to load reports",
+        description: "There was an error loading past reports. Make sure the backend server is running at http://localhost:5002.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchReports();
-  }, [toast]);
+  }, []);
 
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold text-gray-800">Report History</h1>
+          <Button 
+            onClick={fetchReports} 
+            variant="outline" 
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
+        {backendError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
+            <strong className="font-bold">Backend connection error: </strong>
+            <span className="block sm:inline">{backendError}</span>
+            <span className="block mt-2">Make sure the backend server is running at http://localhost:5002.</span>
+          </div>
+        )}
+
         <div className="mt-4">
-          <PastReports reports={pastReports} />
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-md">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mb-4"></div>
+              <p className="text-gray-600">Loading reports...</p>
+            </div>
+          ) : pastReports.length > 0 ? (
+            <PastReports reports={pastReports} />
+          ) : !backendError ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <p className="text-lg text-gray-600">No comparison reports found</p>
+              <p className="text-gray-500 mt-2">Compare some documents to generate reports</p>
+            </div>
+          ) : null}
         </div>
       </div>
     </Layout>
