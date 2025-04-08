@@ -1,5 +1,5 @@
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable
 
 class MergesortRanker:
     """Implements the mergesort algorithm for ranking documents"""
@@ -70,3 +70,63 @@ class MergesortRanker:
         result.extend(right[j:])
         
         return result
+
+
+# Add the missing mergesort_with_comparator function
+def mergesort_with_comparator(items: List[str], comparator: Callable[[str, str], int]) -> List[str]:
+    """
+    Sorts a list of items using mergesort with a custom comparator function.
+    
+    Args:
+        items: List of items to sort
+        comparator: Function that compares two items and returns:
+                   1 if first item is better
+                   -1 if second item is better
+                   0 if they are equal
+                   
+    Returns:
+        Sorted list of items
+    """
+    if len(items) <= 1:
+        return items
+    
+    # Split the list in half
+    mid = len(items) // 2
+    left_half = mergesort_with_comparator(items[:mid], comparator)
+    right_half = mergesort_with_comparator(items[mid:], comparator)
+    
+    # Merge the two halves
+    return _merge_with_comparator(left_half, right_half, comparator)
+
+
+def _merge_with_comparator(left: List[str], right: List[str], comparator: Callable[[str, str], int]) -> List[str]:
+    """
+    Merges two sorted lists using a custom comparator function.
+    
+    Args:
+        left: First sorted list
+        right: Second sorted list
+        comparator: Function that compares two items
+        
+    Returns:
+        Merged sorted list
+    """
+    result = []
+    i = j = 0
+    
+    while i < len(left) and j < len(right):
+        # Compare items using the comparator
+        comparison_result = comparator(left[i], right[j])
+        
+        if comparison_result >= 0:  # left[i] is greater than or equal to right[j]
+            result.append(left[i])
+            i += 1
+        else:  # right[j] is greater
+            result.append(right[j])
+            j += 1
+    
+    # Add remaining items
+    result.extend(left[i:])
+    result.extend(right[j:])
+    
+    return result
