@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { FileText, Download, Share2 } from 'lucide-react';
+import RecentEvaluation from '@/components/RecentEvaluation';
+import PastReports from '@/components/PastReports';
+import axios from 'axios';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data - in a real app, this would come from your API
 const mockResults = {
@@ -65,148 +66,65 @@ const mockResults = {
   ]
 };
 
+type EvaluationReport = {
+  timestamp: string;
+  documents: string[];
+  top_ranked: string;
+  report_path: string;
+  criteria_count: number;
+  evaluation_method: string;
+  custom_prompt?: string;
+};
+
 const Results = () => {
-  // Sort documents by score (highest first)
-  const sortedDocuments = [...mockResults.documents].sort((a, b) => b.score - a.score);
+  const [activeTab, setActiveTab] = useState('current');
+  const [pastReports, setPastReports] = useState<EvaluationReport[]>([]);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await axios.get('/api/report-history');
+        setPastReports(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        setPastReports([]);
+        toast({
+          title: "Unable to load reports",
+          description: "There was an error loading past reports.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchReports();
+  }, [toast]);
 
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold text-gray-800">Ranking Results</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Share2 className="h-4 w-4" />
-              Share
-            </Button>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-800">Evaluation Results</h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Ranking summary */}
-          <Card className="lg:col-span-3 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle>Overall Ranking</CardTitle>
-              <CardDescription>Documents ranked by their overall scores</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {sortedDocuments.map((doc, index) => (
-                  <div key={doc.id} className="flex items-center gap-4">
-                    <div className="bg-brand-primary text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between mb-1">
-                        <span className="font-medium">{doc.name}</span>
-                        <span className="font-medium">{doc.score}%</span>
-                      </div>
-                      <Progress value={doc.score} className="h-2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="current">Current Evaluation</TabsTrigger>
+            <TabsTrigger value="history">Report History</TabsTrigger>
+          </TabsList>
 
-          {/* Detailed scores */}
-          <div className="lg:col-span-2">
-            <Card className="shadow-sm h-full">
-              <CardHeader>
-                <CardTitle>Detailed Evaluation</CardTitle>
-                <CardDescription>Scores by individual criteria</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue={sortedDocuments[0]?.id} className="w-full">
-                  <TabsList className="grid grid-cols-3 mb-4">
-                    {sortedDocuments.map((doc) => (
-                      <TabsTrigger key={doc.id} value={doc.id} className="text-sm">
-                        {doc.name}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  
-                  {mockResults.criteriaScores.map((docScores) => (
-                    <TabsContent key={docScores.documentId} value={docScores.documentId} className="mt-0">
-                      <div className="space-y-4">
-                        {docScores.scores.map((criterionScore) => (
-                          <div key={criterionScore.criterionId}>
-                            <div className="flex justify-between mb-1">
-                              <span className="text-sm font-medium">{criterionScore.name}</span>
-                              <span className="text-sm">{criterionScore.score}%</span>
-                            </div>
-                            <Progress 
-                              value={criterionScore.score} 
-                              className="h-2" 
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
+          <TabsContent value="current">
+            <RecentEvaluation 
+              documents={mockResults.documents}
+              criteriaScores={mockResults.criteriaScores}
+              pairwiseComparisons={mockResults.pairwiseComparisons}
+            />
+          </TabsContent>
 
-          {/* LLM explanation */}
-          <div className="lg:col-span-1">
-            <Card className="shadow-sm h-full">
-              <CardHeader>
-                <CardTitle>AI Insights</CardTitle>
-                <CardDescription>Pairwise comparisons by AI</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="0" className="w-full">
-                  <TabsList className="grid grid-cols-3 mb-4">
-                    {mockResults.pairwiseComparisons.map((_, index) => (
-                      <TabsTrigger key={index} value={index.toString()} className="text-xs">
-                        Pair {index + 1}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  
-                  {mockResults.pairwiseComparisons.map((comparison, index) => (
-                    <TabsContent key={index} value={index.toString()} className="mt-0">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-md">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm font-medium">{comparison.doc1.name}</span>
-                          </div>
-                          <span className="text-xs px-2 py-1 rounded-full bg-gray-200">
-                            {comparison.winner === comparison.doc1.id ? "Winner" : ""}
-                          </span>
-                        </div>
-                        
-                        <div className="text-center text-xs text-gray-500">vs</div>
-                        
-                        <div className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-md">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm font-medium">{comparison.doc2.name}</span>
-                          </div>
-                          <span className="text-xs px-2 py-1 rounded-full bg-gray-200">
-                            {comparison.winner === comparison.doc2.id ? "Winner" : ""}
-                          </span>
-                        </div>
-                        
-                        <div className="mt-3 pt-3 border-t">
-                          <h4 className="text-sm font-medium mb-2">AI Analysis:</h4>
-                          <p className="text-sm text-gray-600">{comparison.reasoning}</p>
-                        </div>
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          <TabsContent value="history">
+            <PastReports reports={pastReports} />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
