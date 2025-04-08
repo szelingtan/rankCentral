@@ -1,73 +1,70 @@
-# Welcome to your Lovable project
 
-## Project info
+# Document Comparison Application
 
-**URL**: https://lovable.dev/projects/c7cb48f5-214b-4974-8e4d-f2df2e347a11
+This application compares and ranks documents based on customizable criteria or prompts using AI technology.
 
-## How can I edit this code?
+## Prerequisites
 
-There are several ways of editing your application.
+- Python 3.10 or higher
+- Node.js 16 or higher
+- MongoDB (optional, for persistent storage)
 
-**Use Lovable**
+## Setup
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c7cb48f5-214b-4974-8e4d-f2df2e347a11) and start prompting.
+1. Clone the repository
+2. Install frontend dependencies:
+```
+npm install
+```
+3. Install backend dependencies:
+```
+pip install -r backend/requirements.txt
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+## Running the Application
 
-**Use your preferred IDE**
+### Option 1: Separate Terminals
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**Start the backend:**
+```
+# Linux/Mac
+./run_backend.sh [port]  # Default port is 5002 if not specified
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# Windows
+run_backend.bat [port]  # Default port is 5002 if not specified
+```
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+**Start the frontend:**
+```
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Option 2: All-in-One (Linux/Mac only)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+./run_app.sh
+```
 
-**Use GitHub Codespaces**
+## Important Notes
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- The frontend and backend must be running simultaneously
+- The backend server must be accessible from the browser
+- The backend runs on port 5002 by default, but you can change it using the environment variable `PORT`
+- If using a different port, make sure your firewall allows connections to that port
 
-## What technologies are used for this project?
+## Troubleshooting
 
-This project is built with .
+If you see "Backend not connected" errors:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Make sure the backend server is running
+2. Check if there are any error messages in the backend terminal
+3. Verify your firewall settings allow the connection
+4. Try restarting both the frontend and backend servers
 
-## How can I deploy this project?
+## API Endpoints
 
-Simply open [Lovable](https://lovable.dev/projects/c7cb48f5-214b-4974-8e4d-f2df2e347a11) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes it is!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- `/api/health` - Check if the backend is running
+- `/api/upload-pdfs` - Upload PDF documents for comparison
+- `/api/compare-documents` - Compare uploaded documents
+- `/api/download-report` - Download the latest comparison report
+- `/api/report-history` - Get history of past reports
