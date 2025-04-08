@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -71,8 +70,7 @@ const Documents = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Get the current host to construct backend URL
-  const backendBaseUrl = `${window.location.protocol}//${window.location.hostname}:5002`;
+  const backendBaseUrl = window.location.origin;
 
   useEffect(() => {
     checkBackendStatus();
@@ -87,7 +85,7 @@ const Documents = () => {
         setBackendStatus('offline');
         toast({
           title: "Backend connection issue",
-          description: "The backend server is not responding correctly. Make sure it's running on port 5002.",
+          description: "The backend server is not responding correctly.",
           variant: "destructive",
         });
       }
@@ -96,7 +94,7 @@ const Documents = () => {
       setBackendStatus('offline');
       toast({
         title: "Backend connection issue",
-        description: "Cannot connect to the backend server. Make sure it's running on port 5002.",
+        description: "Cannot connect to the backend server.",
         variant: "destructive",
       });
     }
@@ -177,7 +175,7 @@ const Documents = () => {
       console.error('Error uploading files:', error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your files. Make sure the backend server is running on port 5002.",
+        description: "There was an error uploading your files. Make sure the backend server is running.",
         variant: "destructive",
       });
     } finally {
@@ -247,7 +245,7 @@ const Documents = () => {
         if (backendStatus === 'offline') {
           toast({
             title: "Backend unavailable",
-            description: "Cannot connect to the backend server. Please check that it's running on port 5002.",
+            description: "Cannot connect to the backend server.",
             variant: "destructive",
           });
           return;
@@ -255,7 +253,7 @@ const Documents = () => {
       } catch (error) {
         toast({
           title: "Backend connection failed",
-          description: "Cannot connect to the backend server. Please check that it's running on port 5002.",
+          description: "Cannot connect to the backend server.",
           variant: "destructive",
         });
         return;
@@ -294,7 +292,7 @@ const Documents = () => {
       console.error('Error comparing documents:', error);
       toast({
         title: "Comparison failed",
-        description: "There was an error analyzing your documents. Make sure the backend server is running on port 5002.",
+        description: "There was an error analyzing your documents. Make sure the backend server is running.",
         variant: "destructive",
       });
     } finally {
@@ -310,7 +308,7 @@ const Documents = () => {
         {backendStatus === 'offline' && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
             <strong className="font-bold">Backend not connected: </strong>
-            <span className="block sm:inline">Make sure the backend server is running on port 5002.</span>
+            <span className="block sm:inline">Make sure the backend server is running.</span>
             <Button 
               variant="outline" 
               size="sm" 
