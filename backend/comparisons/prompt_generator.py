@@ -94,3 +94,58 @@ class PromptGenerator:
         """ % criterion['name']
         
         return prompt
+
+    def generate_custom_prompt(self, doc1_name: str, doc2_name: str, 
+                              doc1_section: str, doc2_section: str,
+                              custom_prompt_text: str) -> str:
+        """
+        Generate a prompt for evaluation based on a custom prompt.
+        
+        Args:
+            doc1_name: Name of first document
+            doc2_name: Name of second document
+            doc1_section: Content from first document
+            doc2_section: Content from second document
+            custom_prompt_text: The custom evaluation instructions
+            
+        Returns:
+            Prompt string
+        """
+        prompt = f"""
+        Compare and evaluate the following two documents based on the provided instructions.
+        
+        # Documents:
+        - Document A: {doc1_name}
+        - Document B: {doc2_name}
+        
+        # Document A Content:
+        {doc1_section}
+        
+        # Document B Content:
+        {doc2_section}
+        
+        # Evaluation Instructions:
+        {custom_prompt_text}
+        
+        # Evaluation Guidelines:
+        - Thoroughly analyze both documents based on the given instructions
+        - Consider all aspects requested in the evaluation instructions
+        - Be objective and fair in your assessment
+        - Use specific examples from the text to support your evaluation
+        - Score each document on a scale of 1-5 (where 1 is poor and 5 is excellent)
+        - Determine a clear winner or declare a tie if truly equal
+        
+        Respond with a JSON object containing these fields:
+        {
+            "criterion_name": "Custom Evaluation",
+            "document_a_score": [score between 1-5],
+            "document_a_analysis": [detailed analysis with specific examples],
+            "document_b_score": [score between 1-5],
+            "document_b_analysis": [detailed analysis with specific examples],
+            "comparative_analysis": [direct side-by-side comparison based on the custom instructions],
+            "reasoning": [detailed justification for your decision],
+            "winner": [either "A" or "B" or "Tie" if truly equal]
+        }
+        """
+        
+        return prompt

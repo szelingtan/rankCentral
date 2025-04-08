@@ -1,95 +1,161 @@
-from typing import Dict, List, Any
+
+from typing import Dict, List, Any, Tuple
 import json
+import os
+import time
 from .document_comparator import DocumentComparator
-from .mergesort_ranking import MergesortRanker
+from .mergesort_ranking import mergesort_with_comparator
 
 class ComparisonEngine:
-    def __init__(self, documents: Dict[str, str], comparison_criteria: List[Dict[str, Any]], openai_api_key: str, pdf_processor=None):
+    """Main engine for comparing multiple documents"""
+    
+    def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], 
+                openai_api_key: str, pdf_processor=None, use_custom_prompt=False):
         """
-        Initialize the document comparison engine.
+        Initialize the comparison engine.
         
         Args:
-            documents: Dictionary mapping document names to their text content
-            comparison_criteria: List of criteria dictionaries with name, description, and weightage
+            documents: Dictionary mapping document names to their content
+            criteria: List of criteria dictionaries with name, description, and weightage
             openai_api_key: API key for OpenAI
             pdf_processor: Optional PDFProcessor instance for section extraction
+            use_custom_prompt: Whether to use a custom prompt for evaluation
         """
         self.documents = documents
-        self.criteria = comparison_criteria
+        self.criteria = criteria
         self.openai_api_key = openai_api_key
         self.pdf_processor = pdf_processor
-        self.comparison_results = []
-        self.document_scores = {}  # Store individual document scores
+        self.use_custom_prompt = use_custom_prompt
+        self.comparison_results = []  # Store all pairwise comparison results
         
-        # Initialize the document comparator
+        # Initialize document comparator for actual comparisons
         self.document_comparator = DocumentComparator(
-            documents, 
-            comparison_criteria, 
-            openai_api_key, 
-            pdf_processor
+            documents, criteria, openai_api_key, pdf_processor, use_custom_prompt
         )
     
-    def compare_documents(self, doc1_name: str, doc2_name: str) -> Dict[str, Any]:
+    def compare_documents(self, doc1: str, doc2: str) -> Dict[str, Any]:
         """
-        Compare two documents by evaluating each criterion separately.
+        Compare two documents using the document comparator.
         
         Args:
-            doc1_name: Name of the first document
-            doc2_name: Name of the second document
+            doc1: Name of the first document
+            doc2: Name of the second document
             
         Returns:
-            Dictionary with comparison results
+            Dictionary containing the comparison results
         """
-        print(f"Comparing: {doc1_name} vs {doc2_name}")
+        print(f"\nComparing {doc1} vs {doc2}...")
         
-        # Delegate to the document comparator
-        comparison_result = self.document_comparator.compare(doc1_name, doc2_name)
-        
-        # Update document scores
-        self._update_document_scores(doc1_name, doc2_name, comparison_result)
-        
-        # Store the comparison result
-        self.comparison_results.append(comparison_result)
-        
-        return comparison_result
+        try:
+            # Check if this pair has already been compared (or the reverse)
+            existing_result = self._find_existing_comparison(doc1, doc2)
+            if existing_result:
+                print(f"Using cached comparison for {doc1} vs {doc2}")
+                return existing_result
+            
+            # Perform the actual comparison
+            result = self.document_comparator.compare(doc1, doc2)
+            self.comparison_results.append(result)
+            return result
+        except Exception as e:
+            error_msg = f"Error comparing {doc1} vs {doc2}: {str(e)}"
+            print(error_msg)
+            
+            # Return an error result
+            error_result = {
+                "document_a": doc1,
+                "document_b": doc2,
+                "winner": None,
+                "error": error_msg
+            }
+            self.comparison_results.append(error_result)
+            return error_result
     
-    def _update_document_scores(self, doc1_name: str, doc2_name: str, comparison_result: Dict[str, Any]) -> None:
+    def _find_existing_comparison(self, doc1: str, doc2: str) -> Dict[str, Any]:
         """
-        Update the document scores based on the comparison result.
+        Check if a comparison between these documents already exists.
         
         Args:
-            doc1_name: Name of the first document
-            doc2_name: Name of the second document
-            comparison_result: The result of comparing the documents
-        """
-        # Get the evaluation details
-        evaluation = comparison_result.get("evaluation_details", {})
-        overall_scores = evaluation.get("overall_scores", {})
-        
-        # Extract scores
-        doc_a_score = overall_scores.get("document_a", 0)
-        doc_b_score = overall_scores.get("document_b", 0)
-        
-        # Initialize document scores if necessary
-        if doc1_name not in self.document_scores:
-            self.document_scores[doc1_name] = []
-        if doc2_name not in self.document_scores:
-            self.document_scores[doc2_name] = []
-        
-        # Store the scores
-        self.document_scores[doc1_name].append(doc_a_score)
-        self.document_scores[doc2_name].append(doc_b_score)
-    
-    def compare_with_mergesort(self, doc_list: List[str]) -> List[str]:
-        """
-        Sort documents using merge sort with pairwise comparisons.
-        
-        Args:
-            doc_list: List of document names to compare
+            doc1: Name of the first document
+            doc2: Name of the second document
             
         Returns:
-            Sorted list of document names
+            Existing comparison result or None
         """
-        # Use the MergesortRanker to rank documents
-        ranker = MergesortRanker(self)
-        return ranker.rank_documents(doc_list)
+        for result in self.comparison_results:
+            # Check direct match
+            if result["document_a"] == doc1 and result["document_b"] == doc2:
+                return result
+            
+            # Check reverse match (need to invert the result)
+            if result["document_a"] == doc2 and result["document_b"] == doc1:
+                # Create inverted result
+                inverted_result = result.copy()
+                inverted_result["document_a"] = doc1
+                inverted_result["document_b"] = doc2
+                
+                # Invert winner
+                if result["winner"] == result["document_a"]:
+                    inverted_result["winner"] = doc1
+                elif result["winner"] == result["document_b"]:
+                    inverted_result["winner"] = doc2
+                    
+                return inverted_result
+                
+        return None
+    
+    def compare_with_mergesort(self, documents: List[str]) -> List[str]:
+        """
+        Rank documents using mergesort with pairwise comparisons.
+        
+        Args:
+            documents: List of document names to compare
+            
+        Returns:
+            Sorted list of documents from best to worst
+        """
+        start_time = time.time()
+        print(f"Starting comparison of {len(documents)} documents using merge sort...")
+        
+        if len(documents) <= 1:
+            return documents
+            
+        comparator = lambda doc1, doc2: self._comparison_function(doc1, doc2)
+        
+        sorted_docs = mergesort_with_comparator(documents, comparator)
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        print(f"Comparison completed in {duration:.2f} seconds")
+        print(f"Final ranking: {sorted_docs}")
+        
+        return sorted_docs
+    
+    def _comparison_function(self, doc1: str, doc2: str) -> int:
+        """
+        Comparison function for mergesort.
+        
+        Args:
+            doc1: First document name
+            doc2: Second document name
+            
+        Returns:
+            1 if doc1 is better, -1 if doc2 is better, 0 if equal
+        """
+        if doc1 == doc2:
+            return 0
+            
+        result = self.compare_documents(doc1, doc2)
+        
+        # If there was an error in comparison
+        if result.get("error", "N/A") != "N/A":
+            print(f"Error in comparison: {result.get('error')}")
+            return 0  # Consider them equal in case of error
+        
+        if result["winner"] == "Tie" or result["winner"] is None:
+            return 0
+        elif result["winner"] == doc1:
+            return 1
+        else:
+            return -1
+    

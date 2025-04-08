@@ -71,13 +71,15 @@ def upload_pdfs():
 
 @app.route('/api/compare-documents', methods=['POST'])
 def compare_documents():
-    """Endpoint to compare uploaded PDFs using specified criteria"""
+    """Endpoint to compare uploaded PDFs using specified criteria or a custom prompt"""
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
     
     criteria_data = data.get('criteria', [])
     comparison_method = data.get('compare_method', 'mergesort')
+    evaluation_method = data.get('evaluation_method', 'criteria')
+    custom_prompt = data.get('custom_prompt', '')
     
     # Check if PDFs are uploaded
     if not os.path.exists(app.config['UPLOAD_FOLDER']) or len(os.listdir(app.config['UPLOAD_FOLDER'])) < 2:
@@ -93,8 +95,19 @@ def compare_documents():
         pdf_processor = PDFProcessor(app.config['UPLOAD_FOLDER'])
         criteria_manager = CriteriaManager()
         
-        # Override criteria from the manager with the ones from the request
-        criteria_manager.criteria = criteria_data
+        # If using criteria-based evaluation, set the criteria
+        if evaluation_method == 'criteria':
+            # Override criteria from the manager with the ones from the request
+            criteria_manager.criteria = criteria_data
+        else:
+            # For prompt-based evaluation, create a single criterion with the custom prompt
+            criteria_manager.criteria = [{
+                "id": "custom",
+                "name": "Custom Evaluation",
+                "description": custom_prompt,
+                "weight": 100,
+                "is_custom_prompt": True
+            }]
         
         # Load PDFs
         pdf_contents = pdf_processor.load_pdfs()
@@ -106,7 +119,8 @@ def compare_documents():
         criteria = criteria_manager.criteria
         
         # Initialize comparison engine
-        comparison_engine = ComparisonEngine(pdf_contents, criteria, api_key, pdf_processor)
+        comparison_engine = ComparisonEngine(pdf_contents, criteria, api_key, pdf_processor, 
+                                            use_custom_prompt=(evaluation_method == 'prompt'))
         
         # Initialize report generator
         report_generator = ReportGenerator(app.config['UPLOAD_FOLDER'])
@@ -129,7 +143,9 @@ def compare_documents():
                     "documents": pdf_list,
                     "top_ranked": results[0] if results else None,
                     "report_path": report_path,
-                    "criteria_count": len(criteria)
+                    "criteria_count": len(criteria),
+                    "evaluation_method": evaluation_method,
+                    "custom_prompt": custom_prompt if evaluation_method == 'prompt' else ""
                 }
                 
                 # Get reports collection
@@ -138,14 +154,14 @@ def compare_documents():
                 # Insert new report metadata
                 reports_collection.insert_one(report_data)
                 
-                # Limit to 5 most recent reports (remove older ones)
+                # Limit to 3 most recent reports (remove older ones)
                 # Find all reports sorted by timestamp
                 all_reports = list(reports_collection.find().sort("timestamp", -1))
                 
-                # Delete any reports beyond the most recent 5
-                if len(all_reports) > 5:
+                # Delete any reports beyond the most recent 3
+                if len(all_reports) > 3:
                     # Get IDs of reports to delete
-                    reports_to_delete = all_reports[5:]
+                    reports_to_delete = all_reports[3:]
                     report_ids = [report["_id"] for report in reports_to_delete]
                     
                     # Delete older reports
@@ -203,7 +219,7 @@ def download_report():
 
 @app.route('/api/report-history', methods=['GET'])
 def get_report_history():
-    """Endpoint to get the history of past reports (up to 5)"""
+    """Endpoint to get the history of past reports (up to 3)"""
     try:
         if not db:
             return jsonify({"error": "Database not connected"}), 500
@@ -211,15 +227,17 @@ def get_report_history():
         # Get reports collection
         reports_collection = db["reports"]
         
-        # Get the 5 most recent reports, sorted by timestamp
+        # Get the 3 most recent reports, sorted by timestamp
         reports = list(reports_collection.find({}, {
             "_id": 0,  # Exclude MongoDB ID
             "timestamp": 1,
             "documents": 1,
             "top_ranked": 1,
             "report_path": 1,
-            "criteria_count": 1
-        }).sort("timestamp", -1).limit(5))
+            "criteria_count": 1,
+            "evaluation_method": 1,
+            "custom_prompt": 1
+        }).sort("timestamp", -1).limit(3))
         
         # Convert ObjectId to string for JSON serialization if needed
         for report in reports:

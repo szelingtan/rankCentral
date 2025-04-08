@@ -9,7 +9,7 @@ from .prompt_generator import PromptGenerator
 class DocumentComparator:
     """Handles the comparison between two documents across multiple criteria"""
     
-    def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], openai_api_key: str, pdf_processor=None):
+    def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], openai_api_key: str, pdf_processor=None, use_custom_prompt=False):
         """
         Initialize the document comparator.
         
@@ -18,11 +18,13 @@ class DocumentComparator:
             criteria: List of criteria dictionaries with name, description, and weightage
             openai_api_key: API key for OpenAI
             pdf_processor: Optional PDFProcessor instance for section extraction
+            use_custom_prompt: Whether to use a custom prompt for evaluation
         """
         self.documents = documents
         self.criteria = criteria
         self.openai_api_key = openai_api_key
         self.pdf_processor = pdf_processor
+        self.use_custom_prompt = use_custom_prompt
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")
         self.criterion_evaluator = CriterionEvaluator(openai_api_key)
         self.prompt_generator = PromptGenerator()
@@ -60,13 +62,24 @@ class DocumentComparator:
             doc1_section, doc2_section = self._get_criterion_sections(doc1_name, doc2_name, criterion)
             
             # Generate a prompt for this criterion
-            prompt = self.prompt_generator.generate_criterion_prompt(
-                doc1_name,
-                doc2_name,
-                doc1_section,
-                doc2_section,
-                criterion
-            )
+            if self.use_custom_prompt or criterion.get('is_custom_prompt', False):
+                # Use the custom prompt approach
+                prompt = self.prompt_generator.generate_custom_prompt(
+                    doc1_name,
+                    doc2_name,
+                    doc1_section,
+                    doc2_section,
+                    criterion['description']  # The custom prompt is in the description field
+                )
+            else:
+                # Use the criteria-based approach
+                prompt = self.prompt_generator.generate_criterion_prompt(
+                    doc1_name,
+                    doc2_name,
+                    doc1_section,
+                    doc2_section,
+                    criterion
+                )
             
             # Calculate max tokens for the LLM response
             prompt_tokens = len(self.tokenizer.encode(prompt))
@@ -157,7 +170,7 @@ class DocumentComparator:
         doc1_section = ""
         doc2_section = ""
         
-        if self.pdf_processor:
+        if self.pdf_processor and not self.use_custom_prompt and not criterion.get('is_custom_prompt', False):
             # Direct search terms - using the criterion name and ID only
             search_terms = [
                 criterion['name'],
@@ -182,7 +195,7 @@ class DocumentComparator:
                         print(f"  Preview: {preview}")
                         break
         
-        # If no relevant sections found, use truncated content
+        # If no relevant sections found or using custom prompt, use truncated content
         if not doc1_section:
             doc1_section = doc1_content[:1500] + "... [truncated]"
             print(f"  Document A '{doc1_name}': No specific section found for criterion '{criterion['name']}'. Using truncated content.")
