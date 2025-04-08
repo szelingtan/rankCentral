@@ -23,43 +23,52 @@ pip install -r backend/requirements.txt
 
 ## Running the Application
 
-### Option 1: Separate Terminals
+### Option 1: Automated Startup (Linux/Mac only)
 
-**Start the backend:**
+This method starts both backend and frontend with one command:
+
+```
+chmod +x run_app.sh  # Make script executable (first time only)
+./run_app.sh
+```
+
+### Option 2: Manual Startup
+
+#### Start the backend:
 ```
 # Linux/Mac
+chmod +x run_backend.sh  # Make script executable (first time only)
 ./run_backend.sh [port]  # Default port is 5002 if not specified
 
 # Windows
 run_backend.bat [port]  # Default port is 5002 if not specified
 ```
 
-**Start the frontend:**
+#### Start the frontend:
 ```
 npm run dev
 ```
 
-### Option 2: All-in-One (Linux/Mac only)
+## Frontend and Backend Communication
 
+The frontend will automatically connect to the backend using the same host and port from where the frontend is served. This works in both development and production environments.
+
+## Troubleshooting Backend Connections
+
+If you're experiencing backend connection issues:
+
+1. Verify the backend is running:
 ```
-./run_app.sh
+# Linux/Mac
+chmod +x test-backend.sh  # Make script executable (first time only)
+./test-backend.sh [port]  # Default port is 5002 if not specified
 ```
 
-## Important Notes
+2. Check if there are any error messages in the backend console
 
-- The frontend and backend must be running simultaneously
-- The backend server must be accessible from the browser
-- The backend runs on port 5002 by default, but you can change it using the environment variable `PORT`
-- If using a different port, make sure your firewall allows connections to that port
+3. Ensure your firewall allows connections to the backend port
 
-## Troubleshooting
-
-If you see "Backend not connected" errors:
-
-1. Make sure the backend server is running
-2. Check if there are any error messages in the backend terminal
-3. Verify your firewall settings allow the connection
-4. Try restarting both the frontend and backend servers
+4. The backend should be accessible at: http://localhost:5002/api/health (adjust port if different)
 
 ## API Endpoints
 
