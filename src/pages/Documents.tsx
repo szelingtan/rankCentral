@@ -70,14 +70,13 @@ const Documents = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const backendBaseUrl = window.location.origin;
-
   useEffect(() => {
     checkBackendStatus();
   }, []);
 
   const checkBackendStatus = async () => {
     try {
+      setBackendStatus('checking');
       const response = await apiClient.get('/health');
       if (response.data.status === 'healthy') {
         setBackendStatus('online');
@@ -157,13 +156,13 @@ const Documents = () => {
         });
         
         const newDocuments = [...documents];
-        response.data.files.forEach((file: any, index: number) => {
-          if (newDocuments.length + index < 10) {
-            const newId = (newDocuments.length + index + 1).toString();
+        response.data.files.forEach((file: string, index: number) => {
+          if (index < 10) {  // Limit to 10 documents
+            const newId = (newDocuments.length + 1).toString();
             newDocuments.push({
               id: newId,
-              name: `Document ${newId}`,
-              content: file.content || '',
+              name: file,
+              content: file,
             });
           }
         });
@@ -304,7 +303,7 @@ const Documents = () => {
         
         {backendStatus === 'offline' && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
-            <strong className="font-bold">Backend not connected: </strong>
+            <strong className="font-bold">Backend not connected: </strong> 
             <span className="block sm:inline">Make sure the backend server is running.</span>
             <Button 
               variant="outline" 
