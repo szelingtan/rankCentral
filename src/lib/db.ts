@@ -1,8 +1,8 @@
 
 import mongoose from 'mongoose';
 
-// MongoDB connection string - replace with your actual connection string
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rankcentral';
+// MongoDB connection string - use Vite's import.meta.env instead of process.env
+const MONGODB_URI = import.meta.env.VITE_MONGODB_URI || 'mongodb://localhost:27017/rankcentral';
 
 // Function to connect to MongoDB
 export async function connectDB() {
