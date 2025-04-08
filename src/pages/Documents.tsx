@@ -79,9 +79,10 @@ const Documents = () => {
     const fetchReports = async () => {
       try {
         const response = await axios.get('/api/report-history');
-        setPastReports(response.data);
+        setPastReports(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error('Error fetching reports:', error);
+        setPastReports([]);
       }
     };
 
@@ -273,7 +274,7 @@ const Documents = () => {
         });
         
         const reportsResponse = await axios.get('/api/report-history');
-        setPastReports(reportsResponse.data);
+        setPastReports(Array.isArray(reportsResponse.data) ? reportsResponse.data : []);
       }
     } catch (error) {
       console.error('Error comparing documents:', error);
@@ -615,7 +616,7 @@ const Documents = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {pastReports.length > 0 ? (
+                {Array.isArray(pastReports) && pastReports.length > 0 ? (
                   <div className="space-y-4">
                     {pastReports.map((report, index) => (
                       <div key={index} className="border rounded-md p-4 bg-gray-50">
@@ -626,10 +627,10 @@ const Documents = () => {
                               Created: {new Date(report.timestamp).toLocaleString()}
                             </p>
                             <p className="text-sm text-gray-600 mt-1">
-                              Documents: {report.documents.join(', ')}
+                              Documents: {Array.isArray(report.documents) ? report.documents.join(', ') : 'N/A'}
                             </p>
                             <p className="text-sm text-gray-600 mt-1">
-                              Top ranked: <span className="font-medium">{report.top_ranked}</span>
+                              Top ranked: <span className="font-medium">{report.top_ranked || 'N/A'}</span>
                             </p>
                           </div>
                           <Button
