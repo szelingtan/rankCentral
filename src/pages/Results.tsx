@@ -22,14 +22,15 @@ const Results = () => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const response = await axios.get('/api/report-history');
+        // Use the correct API URL with the full path including the host
+        const response = await axios.get('http://localhost:5002/api/report-history');
         setPastReports(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error('Error fetching reports:', error);
         setPastReports([]);
         toast({
           title: "Unable to load reports",
-          description: "There was an error loading past reports.",
+          description: "There was an error loading past reports. Make sure the backend server is running at http://localhost:5002.",
           variant: "destructive",
         });
       }
