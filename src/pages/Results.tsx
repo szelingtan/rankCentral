@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import PastReports from '@/components/PastReports';
@@ -107,7 +108,7 @@ const Results = () => {
               <p className="text-gray-600">Loading reports...</p>
             </div>
           ) : pastReports.length > 0 ? (
-            <PastReports reports={pastReports} backendBaseUrl={backendBaseUrl} />
+            <PastReports reports={pastReports} />
           ) : !backendError ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <p className="text-lg text-gray-600">No comparison reports found</p>
