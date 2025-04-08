@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { FileUp, Plus, Trash2, ArrowRight, Download } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FileUp, Plus, Trash2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import CriteriaForm from '@/components/CriteriaForm';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 type Document = {
   id: string;
@@ -24,14 +26,7 @@ type Criterion = {
   name: string;
   description: string;
   weight: number;
-};
-
-type EvaluationReport = {
-  timestamp: string;
-  documents: string[];
-  top_ranked: string;
-  report_path: string;
-  criteria_count: number;
+  scoring_levels?: Record<number, string>;
 };
 
 const defaultCriteria: Criterion[] = [
@@ -71,23 +66,9 @@ const Documents = () => {
   const [activeTab, setActiveTab] = useState('documents');
   const [evaluationMethod, setEvaluationMethod] = useState('criteria');
   const [customPrompt, setCustomPrompt] = useState('');
-  const [pastReports, setPastReports] = useState<EvaluationReport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const response = await axios.get('/api/report-history');
-        setPastReports(Array.isArray(response.data) ? response.data : []);
-      } catch (error) {
-        console.error('Error fetching reports:', error);
-        setPastReports([]);
-      }
-    };
-
-    fetchReports();
-  }, []);
 
   const addDocument = () => {
     const newId = (documents.length + 1).toString();
@@ -113,66 +94,6 @@ const Documents = () => {
     setDocuments(
       documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc))
     );
-  };
-
-  const addCriterion = () => {
-    const newId = (criteria.length + 1).toString();
-    setCriteria([
-      ...criteria,
-      { id: newId, name: '', description: '', weight: 20 },
-    ]);
-  };
-
-  const removeCriterion = (id: string) => {
-    if (criteria.length <= 1) {
-      toast({
-        title: "Cannot remove",
-        description: "You need at least one criterion.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setCriteria(criteria.filter((c) => c.id !== id));
-    normalizeWeights(criteria.filter((c) => c.id !== id));
-  };
-
-  const updateCriterion = (
-    id: string,
-    field: keyof Criterion,
-    value: string | number
-  ) => {
-    setCriteria(
-      criteria.map((c) => (c.id === id ? { ...c, [field]: value } : c))
-    );
-    
-    if (field === 'weight') {
-      normalizeWeights(
-        criteria.map((c) => (c.id === id ? { ...c, weight: value as number } : c))
-      );
-    }
-  };
-
-  const normalizeWeights = (updatedCriteria: Criterion[]) => {
-    const totalWeight = updatedCriteria.reduce((sum, c) => sum + c.weight, 0);
-    
-    if (totalWeight > 0 && totalWeight !== 100) {
-      const normalizedCriteria = updatedCriteria.map(c => ({
-        ...c,
-        weight: Math.round((c.weight / totalWeight) * 100)
-      }));
-      
-      const calculatedTotal = normalizedCriteria.reduce((sum, c) => sum + c.weight, 0);
-      if (calculatedTotal !== 100 && normalizedCriteria.length > 0) {
-        const diff = 100 - calculatedTotal;
-        const lastItem = normalizedCriteria[normalizedCriteria.length - 1];
-        normalizedCriteria[normalizedCriteria.length - 1] = {
-          ...lastItem,
-          weight: lastItem.weight + diff
-        };
-      }
-      
-      setCriteria(normalizedCriteria);
-    }
   };
 
   const uploadFiles = async (files: File[]) => {
@@ -273,8 +194,8 @@ const Documents = () => {
           description: "Your comparison report is ready.",
         });
         
-        const reportsResponse = await axios.get('/api/report-history');
-        setPastReports(Array.isArray(reportsResponse.data) ? reportsResponse.data : []);
+        // Redirect to results page
+        navigate('/results');
       }
     } catch (error) {
       console.error('Error comparing documents:', error);
@@ -305,33 +226,15 @@ const Documents = () => {
     reader.readAsText(file);
   };
 
-  const downloadReport = async (timestamp?: string) => {
-    try {
-      const url = timestamp 
-        ? `/api/download-report/${timestamp}` 
-        : '/api/download-report';
-      
-      window.open(url, '_blank');
-    } catch (error) {
-      console.error('Error downloading report:', error);
-      toast({
-        title: "Download failed",
-        description: "There was an error downloading the report.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">Document Comparison</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="documents">1. Documents</TabsTrigger>
             <TabsTrigger value="evaluation">2. Evaluation Method</TabsTrigger>
-            <TabsTrigger value="reports">3. Reports</TabsTrigger>
           </TabsList>
 
           <TabsContent value="documents" className="mt-0">
@@ -465,111 +368,13 @@ const Documents = () => {
                       </Label>
                     </div>
 
-                    {useCustomCriteria ? (
-                      <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-md font-medium">Custom Criteria</h3>
-                          <Button onClick={addCriterion} variant="outline" size="sm">
-                            <Plus className="h-4 w-4 mr-1" /> Add Criterion
-                          </Button>
-                        </div>
-
-                        {criteria.map((criterion) => (
-                          <div
-                            key={criterion.id}
-                            className="p-4 border rounded-md bg-gray-50"
-                          >
-                            <div className="flex justify-between mb-3">
-                              <div className="flex-1 mr-4">
-                                <Label htmlFor={`criterion-name-${criterion.id}`}>
-                                  Criterion Name
-                                </Label>
-                                <Input
-                                  id={`criterion-name-${criterion.id}`}
-                                  value={criterion.name}
-                                  onChange={(e) =>
-                                    updateCriterion(criterion.id, 'name', e.target.value)
-                                  }
-                                  placeholder="e.g., Clarity, Relevance, etc."
-                                  className="mt-1"
-                                />
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeCriterion(criterion.id)}
-                                className="h-8 w-8 mt-6"
-                              >
-                                <Trash2 className="h-4 w-4 text-gray-500" />
-                              </Button>
-                            </div>
-
-                            <div className="mb-3">
-                              <Label htmlFor={`criterion-desc-${criterion.id}`}>
-                                Description
-                              </Label>
-                              <Textarea
-                                id={`criterion-desc-${criterion.id}`}
-                                value={criterion.description}
-                                onChange={(e) =>
-                                  updateCriterion(
-                                    criterion.id,
-                                    'description',
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Describe what this criterion measures..."
-                                className="mt-1"
-                              />
-                            </div>
-
-                            <div className="mb-1">
-                              <div className="flex justify-between">
-                                <Label htmlFor={`criterion-weight-${criterion.id}`}>
-                                  Weight
-                                </Label>
-                                <span className="text-sm text-gray-500">
-                                  {criterion.weight}%
-                                </span>
-                              </div>
-                              <Slider
-                                id={`criterion-weight-${criterion.id}`}
-                                value={[criterion.weight]}
-                                min={5}
-                                max={100}
-                                step={5}
-                                onValueChange={(value) =>
-                                  updateCriterion(criterion.id, 'weight', value[0])
-                                }
-                                className="mt-2"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <h3 className="text-md font-medium">Default Criteria</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {defaultCriteria.map((criterion) => (
-                            <div
-                              key={criterion.id}
-                              className="p-4 border rounded-md bg-gray-50"
-                            >
-                              <div className="flex justify-between mb-1">
-                                <h4 className="font-medium">{criterion.name}</h4>
-                                <span className="text-sm text-gray-500">
-                                  {criterion.weight}%
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                {criterion.description}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <CriteriaForm 
+                      criteria={criteria}
+                      setCriteria={setCriteria}
+                      defaultCriteria={defaultCriteria}
+                      useCustomCriteria={useCustomCriteria}
+                      setUseCustomCriteria={setUseCustomCriteria}
+                    />
                   </div>
                 ) : (
                   <div className="mt-6">
@@ -590,7 +395,7 @@ const Documents = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-between">
               <Button 
                 variant="outline" 
                 onClick={() => setActiveTab('documents')}
@@ -605,57 +410,6 @@ const Documents = () => {
                 {isLoading ? "Processing..." : "Compare Documents"}
               </Button>
             </div>
-          </TabsContent>
-
-          <TabsContent value="reports" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Past Reports</CardTitle>
-                <CardDescription>
-                  View and download your recent document comparison reports
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {Array.isArray(pastReports) && pastReports.length > 0 ? (
-                  <div className="space-y-4">
-                    {pastReports.map((report, index) => (
-                      <div key={index} className="border rounded-md p-4 bg-gray-50">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">Report {index + 1}</h3>
-                            <p className="text-sm text-gray-600">
-                              Created: {new Date(report.timestamp).toLocaleString()}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Documents: {Array.isArray(report.documents) ? report.documents.join(', ') : 'N/A'}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Top ranked: <span className="font-medium">{report.top_ranked || 'N/A'}</span>
-                            </p>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-1"
-                            onClick={() => downloadReport(report.timestamp)}
-                          >
-                            <Download className="h-4 w-4" />
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No reports available yet.</p>
-                    <p className="text-sm mt-2">
-                      Compare documents to generate reports.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
