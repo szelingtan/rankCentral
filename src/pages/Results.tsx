@@ -29,10 +29,8 @@ const Results = () => {
     
     try {
       // Check if backend is available first
-      let healthCheck = false;
       try {
         await apiClient.get('/health');
-        healthCheck = true;
       } catch (error) {
         // Health check failed, backend is down
         console.error('Backend health check failed:', error);
@@ -48,16 +46,14 @@ const Results = () => {
       }
       
       // If health check passed, get the reports
-      if (healthCheck) {
-        const response = await apiClient.get('/report-history');
-        setPastReports(Array.isArray(response.data) ? response.data : []);
-        
-        if (response.data.length === 0) {
-          toast({
-            title: "No reports found",
-            description: "You haven't generated any comparison reports yet.",
-          });
-        }
+      const response = await apiClient.get('/report-history');
+      setPastReports(Array.isArray(response.data) ? response.data : []);
+      
+      if (response.data.length === 0) {
+        toast({
+          title: "No reports found",
+          description: "You haven't generated any comparison reports yet.",
+        });
       }
     } catch (error) {
       console.error('Error fetching reports:', error);
