@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -260,61 +261,6 @@ def download_specific_report(timestamp):
         )
     except Exception as e:
         print(f"Error in download_specific_report: {str(e)}")
-        return jsonify({"error": f"Error downloading report: {str(e)}"}), 500
-
-@app.route('/api/report-history', methods=['GET'])
-def get_report_history():
-    """Endpoint to get the history of past reports (up to 5)"""
-    try:
-        if not db:
-            return jsonify({"error": "Database not connected"}), 500
-        
-        # Get reports collection
-        reports_collection = db["reports"]
-        
-        # Get the 5 most recent reports, sorted by timestamp
-        reports = list(reports_collection.find({}, {
-            "_id": 0,  # Exclude MongoDB ID
-            "timestamp": 1,
-            "documents": 1,
-            "top_ranked": 1,
-            "report_path": 1,
-            "criteria_count": 1
-        }).sort("timestamp", -1).limit(5))
-        
-        # Convert ObjectId to string for JSON serialization if needed
-        for report in reports:
-            # Convert datetime to ISO format string if needed
-            if isinstance(report.get("timestamp"), datetime):
-                report["timestamp"] = report["timestamp"].isoformat()
-        
-        return jsonify(reports)
-    except Exception as e:
-        return jsonify({"error": f"Error retrieving report history: {str(e)}"}), 500
-
-@app.route('/api/download-report/<timestamp>', methods=['GET'])
-def download_specific_report(timestamp):
-    """Endpoint to download a specific report by timestamp"""
-    try:
-        if not db:
-            return jsonify({"error": "Database not connected"}), 500
-        
-        # Get reports collection
-        reports_collection = db["reports"]
-        
-        # Find the report with the matching timestamp
-        report = reports_collection.find_one({"timestamp": timestamp})
-        
-        if not report or "report_path" not in report:
-            return jsonify({"error": "Report not found"}), 404
-        
-        report_path = report["report_path"]
-        
-        if not os.path.exists(report_path):
-            return jsonify({"error": "Report file not found"}), 404
-        
-        return send_file(report_path, as_attachment=True)
-    except Exception as e:
         return jsonify({"error": f"Error downloading report: {str(e)}"}), 500
 
 @app.route('/api/criteria/default', methods=['GET'])
