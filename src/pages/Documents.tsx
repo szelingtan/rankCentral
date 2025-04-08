@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { FileUp, Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CriteriaForm from '@/components/CriteriaForm';
 import axios from 'axios';
@@ -118,6 +118,21 @@ const Documents = () => {
           title: "Files uploaded",
           description: `Successfully uploaded ${response.data.files.length} files.`,
         });
+        
+        // Create new document entries for each uploaded file
+        const newDocuments = [...documents];
+        response.data.files.forEach((file: any, index: number) => {
+          if (documents.length + index < 10) { // Limit to a reasonable number
+            const newId = (documents.length + index + 1).toString();
+            newDocuments.push({
+              id: newId,
+              name: `Document ${newId}`,
+              content: file.content || '', // If API returns content
+            });
+          }
+        });
+        
+        setDocuments(newDocuments);
       }
     } catch (error) {
       console.error('Error uploading files:', error);
@@ -252,8 +267,8 @@ const Documents = () => {
                       multiple
                     />
                     <Button variant="outline" className="flex items-center gap-2">
-                      <FileUp className="h-4 w-4" />
-                      Upload PDF Files
+                      <Upload className="h-4 w-4" />
+                      Upload Multiple PDFs
                     </Button>
                   </div>
                   <Button onClick={addDocument} className="flex items-center gap-1">
