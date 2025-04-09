@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
@@ -6,7 +5,7 @@ import { checkBackendHealth } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 interface BackendStatusProps {
-  onStatusChange?: (status: 'online' | 'offline' | 'checking') => void;
+  onStatusChange?: (status: StatusType) => void;
   className?: string;
 }
 
@@ -25,17 +24,17 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
     try {
       const health = await checkBackendHealth();
       
-      if (health.isHealthy) {
-        setStatus('online');
-        if (onStatusChange) onStatusChange('online');
-      } else {
-        setStatus('offline');
-        if (onStatusChange) onStatusChange('offline');
+      const newStatus: StatusType = health.isHealthy ? 'online' : 'offline';
+      setStatus(newStatus);
+      if (onStatusChange) onStatusChange(newStatus);
+      
+      if (!health.isHealthy) {
         toast.error('Backend server is not responding.');
       }
     } catch (error) {
-      setStatus('offline');
-      if (onStatusChange) onStatusChange('offline');
+      const newStatus: StatusType = 'offline';
+      setStatus(newStatus);
+      if (onStatusChange) onStatusChange(newStatus);
       toast.error('Backend server is not available.');
     }
     
