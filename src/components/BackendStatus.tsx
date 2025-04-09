@@ -5,13 +5,13 @@ import { RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { checkBackendHealth } from '@/lib/api-client';
 import { toast } from 'sonner';
 
+// Define a type for status to prevent TypeScript comparison errors
+type StatusType = 'online' | 'offline' | 'checking';
+
 interface BackendStatusProps {
   onStatusChange?: (status: StatusType) => void;
   className?: string;
 }
-
-// Define a type for status to prevent TypeScript comparison errors
-type StatusType = 'online' | 'offline' | 'checking';
 
 const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className = '' }) => {
   const [status, setStatus] = useState<StatusType>('checking');
@@ -33,8 +33,9 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
         toast.error('Backend server is not responding.');
       }
     } catch (error) {
-      setStatus('offline');
-      if (onStatusChange) onStatusChange('offline');
+      const newStatus: StatusType = 'offline';
+      setStatus(newStatus);
+      if (onStatusChange) onStatusChange(newStatus);
       toast.error('Backend server is not available.');
     }
     
@@ -87,7 +88,7 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
             className="mt-2 flex items-center gap-1" 
             onClick={checkStatus}
           >
-            <RefreshCw className={`h-3 w-3 ${status === 'checking' ? 'animate-spin' : ''}`} />
+            <RefreshCw className="h-3 w-3" />
             Retry Connection
           </Button>
         </div>
@@ -95,7 +96,7 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
     );
   }
 
-  // Must be checking
+  // Must be checking status
   return (
     <div className={`${className}`}>
       <div className="flex items-center gap-2 text-sm text-amber-600">
@@ -107,3 +108,4 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
 };
 
 export default BackendStatus;
+
