@@ -22,6 +22,7 @@ const Results = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [backendError, setBackendError] = useState<string | null>(null);
   const { toast } = useToast();
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
   
   const fetchReports = async () => {
     setIsLoading(true);
@@ -37,12 +38,12 @@ const Results = () => {
       } catch (error) {
         // Health check failed, backend is down
         console.error('Backend health check failed:', error);
-        setBackendError('Cannot connect to backend server. Make sure it is running on port 5002.');
+        setBackendError(`Cannot connect to backend server. Make sure it is running on the configured port.`);
         setPastReports([]);
         setIsLoading(false);
         toast({
           title: "Backend unavailable",
-          description: `Cannot connect to the backend server at ${import.meta.env.VITE_API_URL || 'http://localhost:5002'}.`,
+          description: `Cannot connect to the backend server at ${apiUrl}.`,
           variant: "destructive",
         });
         return;
@@ -67,7 +68,7 @@ const Results = () => {
       setBackendError('Error loading reports from backend.');
       toast({
         title: "Unable to load reports",
-        description: `There was an error loading past reports. Make sure the backend server is running on port 5002.`,
+        description: `There was an error loading past reports. Make sure the backend server is running.`,
         variant: "destructive",
       });
     } finally {
@@ -99,9 +100,9 @@ const Results = () => {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
             <strong className="font-bold">Backend connection error: </strong>
             <span className="block sm:inline">{backendError}</span>
-            <span className="block mt-2">Make sure the backend server is running on port 5002.</span>
-            <span className="block mt-1">Backend URL: {import.meta.env.VITE_API_URL || 'http://localhost:5002'}</span>
-            <span className="block mt-1">Try running: <code>./run_backend.sh 5002</code></span>
+            <span className="block mt-2">Make sure the backend server is running.</span>
+            <span className="block mt-1">Backend URL: {apiUrl}</span>
+            <span className="block mt-1">Try running: <code>./run_backend.sh 5003</code></span>
           </div>
         )}
 
