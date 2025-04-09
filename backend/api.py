@@ -32,12 +32,34 @@ db = setup_mongodb_connection()
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint to verify backend is running properly"""
-    return jsonify({
-        "status": "healthy", 
-        "message": "PDF Comparison API is running",
-        "version": "1.0.0",
-        "timestamp": datetime.now().isoformat()
-    })
+    try:
+        # Test MongoDB connection if available
+        db_status = "connected" if db else "not connected"
+        
+        # Check if PDF upload folder is accessible
+        folder_status = "accessible" if os.access(app.config['UPLOAD_FOLDER'], os.W_OK) else "not accessible"
+        
+        # Check OpenAI API key
+        openai_key_status = "configured" if os.getenv("OPENAI_API_KEY") else "not configured"
+        
+        return jsonify({
+            "status": "healthy", 
+            "message": "PDF Comparison API is running",
+            "version": "1.0.0",
+            "timestamp": datetime.now().isoformat(),
+            "diagnostics": {
+                "mongodb": db_status,
+                "upload_folder": folder_status,
+                "upload_path": app.config['UPLOAD_FOLDER'],
+                "openai_api": openai_key_status
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy",
+            "message": f"Health check failed: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }), 500
 
 @app.route('/api/upload-pdfs', methods=['POST'])
 def upload_pdfs():

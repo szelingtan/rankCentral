@@ -46,6 +46,12 @@ apiClient.interceptors.response.use(
       console.log('Check if your backend server is running at this URL');
       console.log('If using a different port, update VITE_API_URL in your .env file');
       
+      // Toast with unique ID to prevent duplicates
+      toast.error('Backend server not available. Check if it is running.', {
+        id: 'network-error',
+        duration: 5000,
+      });
+      
       return Promise.reject({
         isConnectionError: true,
         message: 'Backend server not available',
@@ -58,6 +64,14 @@ apiClient.interceptors.response.use(
     const message = error.response?.data?.message || error.message;
     
     console.error(`API error (${status}):`, message);
+    
+    // Use error status and URL to create unique toast ID
+    const toastId = `api-error-${status}-${error.config?.url?.replace(/\//g, '-')}`;
+    
+    toast.error(`API error: ${message}`, {
+      id: toastId,
+      duration: 5000,
+    });
     
     return Promise.reject({
       status,
@@ -75,10 +89,27 @@ export const checkBackendHealth = async () => {
     const response = await apiClient.get('/health');
     console.log('Health check response:', response.data);
     
+    // Verify that the response has the expected structure
+    if (response.data && typeof response.data === 'object') {
+      // Check for expected fields in health response
+      if ('status' in response.data) {
+        return {
+          isHealthy: response.data?.status === 'healthy',
+          message: response.data?.message || 'Backend is running',
+          error: null,
+          timestamp: response.data?.timestamp,
+          version: response.data?.version
+        };
+      }
+    }
+    
+    // If response structure is unexpected
+    console.warn('Health endpoint response format is unexpected:', response.data);
     return {
-      isHealthy: response.data?.status === 'healthy',
-      message: response.data?.message || 'Backend is running',
-      error: null
+      isHealthy: false,
+      message: 'Backend returned an unexpected response format',
+      error: 'Invalid response format',
+      data: response.data
     };
   } catch (error: any) {
     console.error('Health check failed with error:', error);

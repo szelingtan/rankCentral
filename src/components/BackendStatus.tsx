@@ -16,14 +16,19 @@ interface BackendStatusProps {
 const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className = '' }) => {
   const [status, setStatus] = useState<StatusType>('checking');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
 
   const checkStatus = async () => {
+    // Prevent multiple simultaneous health checks
+    if (isCheckingHealth) return;
+    
+    setIsCheckingHealth(true);
     setStatus('checking');
     if (onStatusChange) onStatusChange('checking');
     
     try {
-      console.log('Checking backend health...');
+      console.log('Checking backend health at:', apiUrl);
       const health = await checkBackendHealth();
       console.log('Health check result:', health);
       
@@ -33,17 +38,24 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
       
       if (!health.isHealthy) {
         console.log('Backend health check failed, server is not responding.');
-        toast.error('Backend server is not responding.');
+        toast.error('Backend server is not responding.', {
+          id: 'backend-health-error',
+          duration: 4000,
+        });
       }
     } catch (error) {
       console.error('Backend connection error:', error);
       const newStatus: StatusType = 'offline';
       setStatus(newStatus);
       if (onStatusChange) onStatusChange(newStatus);
-      toast.error('Backend server is not available.');
+      toast.error('Backend server is not available.', {
+        id: 'backend-connection-error',
+        duration: 4000,
+      });
+    } finally {
+      setIsCheckingHealth(false);
+      setLastChecked(new Date());
     }
-    
-    setLastChecked(new Date());
   };
 
   useEffect(() => {
@@ -66,8 +78,9 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
           size="icon"
           className="h-6 w-6" 
           onClick={checkStatus}
+          disabled={isCheckingHealth}
         >
-          <RefreshCw className="h-3 w-3" />
+          <RefreshCw className={`h-3 w-3 ${isCheckingHealth ? 'animate-spin' : ''}`} />
         </Button>
       </div>
     );
@@ -91,8 +104,9 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
             size="sm" 
             className="mt-2 flex items-center gap-1" 
             onClick={checkStatus}
+            disabled={isCheckingHealth}
           >
-            <RefreshCw className="h-3 w-3" />
+            <RefreshCw className={`h-3 w-3 ${isCheckingHealth ? 'animate-spin' : ''}`} />
             Retry Connection
           </Button>
         </div>
