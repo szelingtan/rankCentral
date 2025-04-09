@@ -31,7 +31,13 @@ db = setup_mongodb_connection()
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "healthy", "message": "PDF Comparison API is running"})
+    """Health check endpoint to verify backend is running properly"""
+    return jsonify({
+        "status": "healthy", 
+        "message": "PDF Comparison API is running",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    })
 
 @app.route('/api/upload-pdfs', methods=['POST'])
 def upload_pdfs():
@@ -289,7 +295,7 @@ def get_default_criteria():
 
 if __name__ == '__main__':
     # Get port from environment variable or use default
-    port = int(os.environ.get('PORT', 5002))
+    port = int(os.environ.get('PORT', 5003))
     
     print(f"Starting backend server on port {port}...")
     print(f"API will be available at: http://localhost:{port}/api/health")

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import apiClient from '@/lib/api-client';
+import { toast } from 'sonner';
 
 type EvaluationReport = {
   timestamp: string;
@@ -21,7 +21,7 @@ type PastReportsProps = {
 };
 
 const PastReports = ({ reports }: PastReportsProps) => {
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
 
   const downloadReport = async (timestamp?: string) => {
@@ -33,9 +33,12 @@ const PastReports = ({ reports }: PastReportsProps) => {
       
       console.log(`Opening download URL: ${url}`);
       window.open(url, '_blank');
+      
+      toast.info('Download started. Check your downloads folder.');
     } catch (error) {
       console.error('Error downloading report:', error);
-      toast({
+      toast.error('Download failed.');
+      uiToast({
         title: "Download failed",
         description: "There was an error downloading the report.",
         variant: "destructive",
