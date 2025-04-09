@@ -40,7 +40,12 @@ apiClient.interceptors.response.use(
     // Handle connection errors specially
     if (error.code === 'ERR_NETWORK') {
       console.error('Backend connection error:', error);
-      toast.error('Backend server not available. Please ensure the backend is running.');
+      
+      // Add more detailed diagnostic information
+      console.log('Current API URL:', apiClient.defaults.baseURL);
+      console.log('Check if your backend server is running at this URL');
+      console.log('If using a different port, update VITE_API_URL in your .env file');
+      
       return Promise.reject({
         isConnectionError: true,
         message: 'Backend server not available',
@@ -66,13 +71,17 @@ apiClient.interceptors.response.use(
 // Helper function to check if backend is running
 export const checkBackendHealth = async () => {
   try {
+    console.log('Checking backend health at:', apiClient.defaults.baseURL);
     const response = await apiClient.get('/health');
+    console.log('Health check response:', response.data);
+    
     return {
       isHealthy: response.data?.status === 'healthy',
       message: response.data?.message || 'Backend is running',
       error: null
     };
   } catch (error: any) {
+    console.error('Health check failed with error:', error);
     return {
       isHealthy: false,
       message: 'Backend connection failed',
