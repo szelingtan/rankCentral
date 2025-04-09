@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
@@ -67,9 +68,10 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
     );
   }
 
+  // Using type guards to fix the TypeScript comparison issues
   return (
     <div className={`${className}`}>
-      {status === 'offline' ? (
+      {status === 'offline' && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <div className="flex items-center gap-2">
             <XCircle className="h-5 w-5" />
@@ -90,7 +92,9 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
             {status === 'checking' ? 'Checking...' : 'Retry Connection'}
           </Button>
         </div>
-      ) : (
+      )}
+      
+      {status === 'checking' && (
         <div className="flex items-center gap-2 text-sm text-amber-600">
           <RefreshCw className="h-4 w-4 animate-spin" />
           <span>Checking backend connection...</span>
