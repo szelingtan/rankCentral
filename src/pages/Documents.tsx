@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileUp, Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { toast } from 'sonner';
-import CriteriaForm from '@/components/CriteriaForm';
 import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
 
@@ -218,7 +217,6 @@ const Documents = () => {
   const handleSubmit = async () => {
     const emptyDocs = documents.filter(doc => !doc.content.trim());
     if (emptyDocs.length > 0) {
-      toast.error('Please fill in content for all documents.');
       uiToast({
         title: "Empty documents",
         description: "Please fill in content for all documents.",
@@ -320,23 +318,6 @@ const Documents = () => {
     <Layout>
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-gray-800">Document Comparison</h1>
-        
-        {backendStatus === 'offline' && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
-            <strong className="font-bold">Backend not connected: </strong> 
-            <span className="block sm:inline">Make sure the backend server is running.</span>
-            <p className="mt-2">1. Run <code className="bg-gray-200 px-1 py-0.5 rounded">./run_backend.sh</code> or <code className="bg-gray-200 px-1 py-0.5 rounded">python backend/api.py</code> in your terminal</p>
-            <p className="mt-1">2. Backend URL: <code className="bg-gray-200 px-1 py-0.5 rounded">{apiUrl}</code></p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2" 
-              onClick={checkBackendStatus}
-            >
-              Retry Connection
-            </Button>
-          </div>
-        )}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
