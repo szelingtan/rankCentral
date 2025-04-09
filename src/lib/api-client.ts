@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Create an axios instance for backend calls
 const apiClient = axios.create({
-  // Use a configurable API URL that defaults to localhost:5002
-  baseURL: import.meta.env.VITE_API_URL || `http://localhost:5002`,
+  // Use a configurable API URL that defaults to localhost:5003
+  baseURL: import.meta.env.VITE_API_URL || `http://localhost:5003`,
   timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',

@@ -32,7 +32,7 @@ find_available_port() {
 }
 
 # Find an available port for the backend
-BACKEND_PORT=$(find_available_port 5002)
+BACKEND_PORT=$(find_available_port 5003)
 
 echo "Starting backend server on port $BACKEND_PORT..."
 export PORT=$BACKEND_PORT

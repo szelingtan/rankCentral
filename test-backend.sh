@@ -3,8 +3,8 @@
 
 # This script tests if the backend server is running correctly
 
-# Get port (default to 5002)
-PORT=${1:-5002}
+# Get port (default to 5003)
+PORT=${1:-5003}
 
 echo "Testing backend connection on port $PORT..."
 

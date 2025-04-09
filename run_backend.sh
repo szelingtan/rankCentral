@@ -1,8 +1,8 @@
 
 #!/bin/bash
 
-# Set port (default to 5002 if not provided)
-PORT=${1:-5002}
+# Set port (default to 5003 if not provided)
+PORT=${1:-5003}
 
 # Export port as environment variable
 export PORT=$PORT

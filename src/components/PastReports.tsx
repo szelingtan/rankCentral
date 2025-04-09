@@ -22,7 +22,7 @@ type PastReportsProps = {
 
 const PastReports = ({ reports }: PastReportsProps) => {
   const { toast } = useToast();
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
 
   const downloadReport = async (timestamp?: string) => {
     try {

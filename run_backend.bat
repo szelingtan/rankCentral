@@ -2,9 +2,9 @@
 @echo off
 setlocal
 
-rem Set port (default to 5002 if not provided)
+rem Set port (default to 5003 if not provided)
 if "%1"=="" (
-    set PORT=5002
+    set PORT=5003
 ) else (
     set PORT=%1
 )
