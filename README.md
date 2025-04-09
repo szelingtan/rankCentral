@@ -20,21 +20,14 @@ npm install
 ```
 pip install -r backend/requirements.txt
 ```
+4. Create an `.env` file in the project root with the following content:
+```
+VITE_API_URL=http://localhost:5002
+```
 
 ## Running the Application
 
-### Option 1: Automated Startup (Linux/Mac only)
-
-This method starts both backend and frontend with one command:
-
-```
-chmod +x run_app.sh  # Make script executable (first time only)
-./run_app.sh
-```
-
-### Option 2: Manual Startup
-
-#### Start the backend:
+### Start the backend:
 ```
 # Linux/Mac
 chmod +x run_backend.sh  # Make script executable (first time only)
@@ -44,14 +37,10 @@ chmod +x run_backend.sh  # Make script executable (first time only)
 run_backend.bat [port]  # Default port is 5002 if not specified
 ```
 
-#### Start the frontend:
+### Start the frontend:
 ```
 npm run dev
 ```
-
-## Frontend and Backend Communication
-
-The frontend will automatically connect to the backend using the same host and port from where the frontend is served. This works in both development and production environments.
 
 ## Troubleshooting Backend Connections
 
@@ -68,7 +57,14 @@ chmod +x test-backend.sh  # Make script executable (first time only)
 
 3. Ensure your firewall allows connections to the backend port
 
-4. The backend should be accessible at: http://localhost:5002/api/health (adjust port if different)
+4. Check that CORS is properly configured on your backend:
+   - The backend needs to allow requests from your frontend origin
+   - The Python Flask API has CORS enabled with `CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)`
+
+5. Verify that the port in your `.env` file matches the port where the backend is running
+
+6. Try accessing the backend health endpoint directly in your browser:
+   - http://localhost:5002/api/health
 
 ## API Endpoints
 

@@ -3,9 +3,9 @@ import axios from 'axios';
 
 // Create an axios instance for backend calls
 const apiClient = axios.create({
-  // Use the current window location to dynamically determine the backend URL
-  // This works for both local development and production deployments
-  baseURL: `${window.location.protocol}//${window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}`,
+  // Don't use the current window location for the backend URL
+  // Instead, use a configurable API URL that defaults to localhost:5002
+  baseURL: import.meta.env.VITE_API_URL || `http://localhost:5002`,
   timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
