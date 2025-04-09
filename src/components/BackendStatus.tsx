@@ -33,9 +33,8 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
         toast.error('Backend server is not responding.');
       }
     } catch (error) {
-      const newStatus: StatusType = 'offline';
-      setStatus(newStatus);
-      if (onStatusChange) onStatusChange(newStatus);
+      setStatus('offline');
+      if (onStatusChange) onStatusChange('offline');
       toast.error('Backend server is not available.');
     }
     
@@ -51,6 +50,7 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
     return () => clearInterval(interval);
   }, []);
 
+  // Render based on status state
   if (status === 'online') {
     return (
       <div className={`flex items-center gap-2 text-sm text-green-600 ${className}`}>
@@ -68,10 +68,9 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
     );
   }
 
-  // Using type guards to fix the TypeScript comparison issues
-  return (
-    <div className={`${className}`}>
-      {status === 'offline' && (
+  if (status === 'offline') {
+    return (
+      <div className={`${className}`}>
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <div className="flex items-center gap-2">
             <XCircle className="h-5 w-5" />
@@ -89,17 +88,20 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
             onClick={checkStatus}
           >
             <RefreshCw className={`h-3 w-3 ${status === 'checking' ? 'animate-spin' : ''}`} />
-            {status === 'checking' ? 'Checking...' : 'Retry Connection'}
+            Retry Connection
           </Button>
         </div>
-      )}
-      
-      {status === 'checking' && (
-        <div className="flex items-center gap-2 text-sm text-amber-600">
-          <RefreshCw className="h-4 w-4 animate-spin" />
-          <span>Checking backend connection...</span>
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  // Must be checking
+  return (
+    <div className={`${className}`}>
+      <div className="flex items-center gap-2 text-sm text-amber-600">
+        <RefreshCw className="h-4 w-4 animate-spin" />
+        <span>Checking backend connection...</span>
+      </div>
     </div>
   );
 };
