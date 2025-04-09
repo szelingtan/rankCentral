@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileUp, Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
+import CriteriaForm from '@/components/CriteriaForm';
 
 type Document = {
   id: string;
