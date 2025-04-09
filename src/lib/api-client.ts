@@ -3,8 +3,7 @@ import axios from 'axios';
 
 // Create an axios instance for backend calls
 const apiClient = axios.create({
-  // Don't use the current window location for the backend URL
-  // Instead, use a configurable API URL that defaults to localhost:5002
+  // Use a configurable API URL that defaults to localhost:5002
   baseURL: import.meta.env.VITE_API_URL || `http://localhost:5002`,
   timeout: 30000, // 30 seconds timeout
   headers: {
@@ -19,6 +18,8 @@ apiClient.interceptors.request.use(
     if (!config.url?.startsWith('/api/')) {
       config.url = `/api${config.url?.startsWith('/') ? config.url : `/${config.url}`}`;
     }
+    
+    console.log(`Making request to: ${config.baseURL}${config.url}`);
     return config;
   },
   (error) => {

@@ -22,14 +22,16 @@ type PastReportsProps = {
 
 const PastReports = ({ reports }: PastReportsProps) => {
   const { toast } = useToast();
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
   const downloadReport = async (timestamp?: string) => {
     try {
       // For download, we need to open in a new window since it's a file
       const url = timestamp 
-        ? `/api/download-report/${timestamp}`
-        : `/api/download-report`;
+        ? `${apiUrl}/api/download-report/${timestamp}`
+        : `${apiUrl}/api/download-report`;
       
+      console.log(`Opening download URL: ${url}`);
       window.open(url, '_blank');
     } catch (error) {
       console.error('Error downloading report:', error);
