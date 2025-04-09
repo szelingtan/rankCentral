@@ -28,25 +28,31 @@ const Results = () => {
     setBackendError(null);
     
     try {
+      console.log('Checking backend health...');
       // Check if backend is available first
       try {
-        await apiClient.get('/health');
+        // Use the full path with /api prefix
+        const healthResponse = await apiClient.get('/api/health');
+        console.log('Backend health response:', healthResponse.data);
       } catch (error) {
         // Health check failed, backend is down
         console.error('Backend health check failed:', error);
-        setBackendError('Cannot connect to backend server.');
+        setBackendError('Cannot connect to backend server. Make sure it is running on port 5002.');
         setPastReports([]);
         setIsLoading(false);
         toast({
           title: "Backend unavailable",
-          description: `Cannot connect to the backend server.`,
+          description: `Cannot connect to the backend server at ${import.meta.env.VITE_API_URL || 'http://localhost:5002'}.`,
           variant: "destructive",
         });
         return;
       }
       
       // If health check passed, get the reports
-      const response = await apiClient.get('/report-history');
+      console.log('Fetching report history...');
+      const response = await apiClient.get('/api/report-history');
+      console.log('Report history response:', response.data);
+      
       setPastReports(Array.isArray(response.data) ? response.data : []);
       
       if (response.data.length === 0) {
@@ -61,7 +67,7 @@ const Results = () => {
       setBackendError('Error loading reports from backend.');
       toast({
         title: "Unable to load reports",
-        description: `There was an error loading past reports. Make sure the backend server is running.`,
+        description: `There was an error loading past reports. Make sure the backend server is running on port 5002.`,
         variant: "destructive",
       });
     } finally {
@@ -93,7 +99,9 @@ const Results = () => {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
             <strong className="font-bold">Backend connection error: </strong>
             <span className="block sm:inline">{backendError}</span>
-            <span className="block mt-2">Make sure the backend server is running on the configured port.</span>
+            <span className="block mt-2">Make sure the backend server is running on port 5002.</span>
+            <span className="block mt-1">Backend URL: {import.meta.env.VITE_API_URL || 'http://localhost:5002'}</span>
+            <span className="block mt-1">Try running: <code>./run_backend.sh 5002</code></span>
           </div>
         )}
 
