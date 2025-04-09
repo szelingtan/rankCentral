@@ -22,3 +22,25 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+
+# Virtual environment files
+/virtual_env/*
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+build/
+develop-eggs/
+.eggs/
+.installed.cfg
+*.manifest
+*.spec
+.cache/

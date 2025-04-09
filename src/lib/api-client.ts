@@ -9,7 +9,7 @@ const shownErrors = new Set();
 const apiClient = axios.create({
   // Use environment variable with fallback
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5003',
-  timeout: 30000, // 30 seconds timeout
+  timeout: 300000, // 300 seconds timeout
   headers: {
     'Content-Type': 'application/json',
   }

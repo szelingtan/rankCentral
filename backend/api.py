@@ -174,7 +174,7 @@ def compare_documents():
         report_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results)
         
         # Store report metadata in MongoDB
-        if db:
+        if db is not None:
             try:
                 # Store only metadata about the report
                 report_data = {
@@ -261,9 +261,9 @@ def download_report():
 def get_report_history():
     """Endpoint to get the history of past reports (up to 3)"""
     try:
-        if not db:
+        if db is None:
             return jsonify({"error": "Database not connected"}), 500
-        
+
         # Get reports collection
         reports_collection = db["reports"]
         
@@ -293,7 +293,7 @@ def get_report_history():
 def download_specific_report(timestamp):
     """Endpoint to download a specific report by timestamp"""
     try:
-        if not db:
+        if db is None:
             return jsonify({"error": "Database not connected"}), 500
         
         # Get reports collection

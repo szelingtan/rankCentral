@@ -49,7 +49,7 @@ class ReportGenerator:
                 if report_data:
                     df_main = pd.DataFrame(report_data)
                     df_main.to_excel(writer, sheet_name=SHEET_NAMES["overall"], index=False)
-                
+                                
                 # Criterion details sheet
                 if criterion_data:
                     df_criteria = pd.DataFrame(criterion_data)
