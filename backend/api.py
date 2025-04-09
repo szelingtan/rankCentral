@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -99,7 +100,7 @@ def upload_pdfs():
 
 @app.route('/api/compare-documents', methods=['POST'])
 def compare_documents():
-    """Endpoint to compare uploaded PDFs using specified criteria or a custom prompt"""
+    """Endpoint to compare documents using specified criteria or a custom prompt"""
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -108,10 +109,16 @@ def compare_documents():
     comparison_method = data.get('compare_method', 'mergesort')
     evaluation_method = data.get('evaluation_method', 'criteria')
     custom_prompt = data.get('custom_prompt', '')
+    documents_data = data.get('documents', [])
     
-    # Check if PDFs are uploaded
-    if not os.path.exists(app.config['UPLOAD_FOLDER']) or len(os.listdir(app.config['UPLOAD_FOLDER'])) < 2:
-        return jsonify({"error": "Upload at least two PDF files before comparison"}), 400
+    # Check if documents are provided
+    if not documents_data or len(documents_data) < 2:
+        # Check if PDFs are uploaded as fallback
+        if not os.path.exists(app.config['UPLOAD_FOLDER']) or len(os.listdir(app.config['UPLOAD_FOLDER'])) < 2:
+            return jsonify({"error": "Provide at least two documents for comparison"}), 400
+        use_uploaded_pdfs = True
+    else:
+        use_uploaded_pdfs = False
     
     try:
         # Get the API key from environment
@@ -137,11 +144,15 @@ def compare_documents():
                 "is_custom_prompt": True
             }]
         
-        # Load PDFs
-        pdf_contents = pdf_processor.load_pdfs()
-        
-        # Extract criteria sections from PDFs
-        pdf_processor.extract_criteria_sections()
+        # Get the document contents
+        if use_uploaded_pdfs:
+            # Load PDFs from upload folder
+            pdf_contents = pdf_processor.load_pdfs()
+        else:
+            # Use the document contents from the request
+            pdf_contents = {}
+            for doc in documents_data:
+                pdf_contents[doc['name']] = doc['content']
         
         # Get criteria
         criteria = criteria_manager.criteria
@@ -208,6 +219,7 @@ def compare_documents():
     except Exception as e:
         return jsonify({"error": f"Error during comparison: {str(e)}"}), 500
 
+# ... keep existing code (from @app.route('/api/download-report', methods=['GET']) through the end)
 @app.route('/api/download-report', methods=['GET'])
 def download_report():
     """Endpoint to download the generated Excel report"""
