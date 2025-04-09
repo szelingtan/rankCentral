@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import PastReports from '@/components/PastReports';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import apiClient from '@/lib/api-client';
+import apiClient, { checkBackendHealth } from '@/lib/api-client';
 
 type EvaluationReport = {
   timestamp: string;
@@ -21,27 +22,32 @@ const Results = () => {
   const [pastReports, setPastReports] = useState<EvaluationReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [backendError, setBackendError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+  
+  const checkBackend = async () => {
+    try {
+      const health = await checkBackendHealth();
+      return health.isHealthy;
+    } catch (error) {
+      return false;
+    }
+  };
   
   const fetchReports = async () => {
     setIsLoading(true);
     setBackendError(null);
     
     try {
-      console.log('Checking backend health...');
       // Check if backend is available first
-      try {
-        // Use the full path with /api prefix
-        const healthResponse = await apiClient.get('/api/health');
-        console.log('Backend health response:', healthResponse.data);
-      } catch (error) {
-        // Health check failed, backend is down
-        console.error('Backend health check failed:', error);
-        setBackendError(`Cannot connect to backend server. Make sure it is running on the configured port.`);
+      const backendAvailable = await checkBackend();
+      
+      if (!backendAvailable) {
+        setBackendError(`Cannot connect to backend server at ${apiUrl}. Make sure it is running.`);
         setPastReports([]);
         setIsLoading(false);
-        toast({
+        toast.error(`Cannot connect to the backend server at ${apiUrl}.`);
+        uiToast({
           title: "Backend unavailable",
           description: `Cannot connect to the backend server at ${apiUrl}.`,
           variant: "destructive",
@@ -49,24 +55,26 @@ const Results = () => {
         return;
       }
       
-      // If health check passed, get the reports
+      // If backend is available, get the reports
       console.log('Fetching report history...');
-      const response = await apiClient.get('/api/report-history');
+      const response = await apiClient.get('/report-history');
       console.log('Report history response:', response.data);
       
       setPastReports(Array.isArray(response.data) ? response.data : []);
       
       if (response.data.length === 0) {
-        toast({
+        toast.info("You haven't generated any comparison reports yet.");
+        uiToast({
           title: "No reports found",
           description: "You haven't generated any comparison reports yet.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching reports:', error);
       setPastReports([]);
-      setBackendError('Error loading reports from backend.');
-      toast({
+      setBackendError(`Error loading reports: ${error.message || "Unknown error"}`);
+      toast.error('Error loading reports from the backend.');
+      uiToast({
         title: "Unable to load reports",
         description: `There was an error loading past reports. Make sure the backend server is running.`,
         variant: "destructive",
@@ -100,9 +108,19 @@ const Results = () => {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
             <strong className="font-bold">Backend connection error: </strong>
             <span className="block sm:inline">{backendError}</span>
-            <span className="block mt-2">Make sure the backend server is running.</span>
-            <span className="block mt-1">Backend URL: {apiUrl}</span>
-            <span className="block mt-1">Try running: <code>./run_backend.sh 5003</code></span>
+            <p className="mt-2 font-medium">Steps to fix:</p>
+            <p className="mt-1">1. Run <code className="bg-gray-200 px-1 py-0.5 rounded">./run_backend.sh</code> or <code className="bg-gray-200 px-1 py-0.5 rounded">python backend/api.py</code> in your terminal</p>
+            <p className="mt-1">2. Backend URL: <code className="bg-gray-200 px-1 py-0.5 rounded">{apiUrl}</code></p>
+            <p className="mt-1">3. Check terminal for any errors</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={fetchReports}
+            >
+              <RefreshCw className="h-3 w-3 mr-2" />
+              Try Again
+            </Button>
           </div>
         )}
 

@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileUp, Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import CriteriaForm from '@/components/CriteriaForm';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '@/lib/api-client';
+import apiClient, { checkBackendHealth } from '@/lib/api-client';
 
 type Document = {
   id: string;
@@ -68,32 +69,39 @@ const Documents = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
   
   useEffect(() => {
     checkBackendStatus();
   }, []);
 
   const checkBackendStatus = async () => {
+    setBackendStatus('checking');
+    
     try {
-      setBackendStatus('checking');
-      const response = await apiClient.get('/health');
-      if (response.data.status === 'healthy') {
+      const health = await checkBackendHealth();
+      
+      if (health.isHealthy) {
+        console.log('Backend health check passed:', health.message);
         setBackendStatus('online');
       } else {
+        console.error('Backend health check failed:', health.error);
         setBackendStatus('offline');
-        toast({
+        toast.error('Backend server is not available. Please start the backend server.');
+        uiToast({
           title: "Backend connection issue",
-          description: "The backend server is not responding correctly.",
+          description: "Cannot connect to the backend server. Make sure it's running.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Backend health check failed:", error);
+      console.error("Backend health check error:", error);
       setBackendStatus('offline');
-      toast({
+      toast.error('Backend server is not available. Please start the backend server.');
+      uiToast({
         title: "Backend connection issue",
-        description: "Cannot connect to the backend server.",
+        description: "Cannot connect to the backend server. Make sure it's running.",
         variant: "destructive",
       });
     }
@@ -109,11 +117,7 @@ const Documents = () => {
 
   const removeDocument = (id: string) => {
     if (documents.length <= 2) {
-      toast({
-        title: "Cannot remove",
-        description: "You need at least two documents for comparison.",
-        variant: "destructive",
-      });
+      toast.error('Cannot remove. You need at least two documents for comparison.');
       return;
     }
     setDocuments(documents.filter((doc) => doc.id !== id));
@@ -143,6 +147,8 @@ const Documents = () => {
         formData.append('files[]', file);
       });
       
+      console.log('Uploading files to:', `${apiUrl}/api/upload-pdfs`);
+      
       const response = await apiClient.post('/upload-pdfs', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -150,7 +156,8 @@ const Documents = () => {
       });
 
       if (response.data.files) {
-        toast({
+        toast.success(`Successfully uploaded ${response.data.files.length} files.`);
+        uiToast({
           title: "Files uploaded",
           description: `Successfully uploaded ${response.data.files.length} files.`,
         });
@@ -169,11 +176,13 @@ const Documents = () => {
         
         setDocuments(newDocuments);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading files:', error);
-      toast({
+      
+      toast.error('Upload failed. Make sure the backend server is running.');
+      uiToast({
         title: "Upload failed",
-        description: "There was an error uploading your files. Make sure the backend server is running.",
+        description: error.message || "There was an error uploading your files.",
         variant: "destructive",
       });
     } finally {
@@ -197,7 +206,8 @@ const Documents = () => {
       const content = e.target?.result as string;
       updateDocument(docId, 'content', content);
       
-      toast({
+      toast.success(`${file.name} has been loaded.`);
+      uiToast({
         title: "File uploaded",
         description: `${file.name} has been loaded.`,
       });
@@ -208,7 +218,8 @@ const Documents = () => {
   const handleSubmit = async () => {
     const emptyDocs = documents.filter(doc => !doc.content.trim());
     if (emptyDocs.length > 0) {
-      toast({
+      toast.error('Please fill in content for all documents.');
+      uiToast({
         title: "Empty documents",
         description: "Please fill in content for all documents.",
         variant: "destructive",
@@ -219,7 +230,8 @@ const Documents = () => {
     if (evaluationMethod === 'criteria' && useCustomCriteria) {
       const invalidCriteria = criteria.filter(c => !c.name.trim());
       if (invalidCriteria.length > 0) {
-        toast({
+        toast.error('Please provide a name for all criteria.');
+        uiToast({
           title: "Invalid criteria",
           description: "Please provide a name for all criteria.",
           variant: "destructive",
@@ -229,7 +241,8 @@ const Documents = () => {
     }
 
     if (evaluationMethod === 'prompt' && !customPrompt.trim()) {
-      toast({
+      toast.error('Please provide an evaluation prompt.');
+      uiToast({
         title: "Empty prompt",
         description: "Please provide an evaluation prompt.",
         variant: "destructive",
@@ -241,7 +254,8 @@ const Documents = () => {
       try {
         await checkBackendStatus();
         if (backendStatus === 'offline') {
-          toast({
+          toast.error('Cannot connect to the backend server.');
+          uiToast({
             title: "Backend unavailable",
             description: "Cannot connect to the backend server.",
             variant: "destructive",
@@ -249,7 +263,8 @@ const Documents = () => {
           return;
         }
       } catch (error) {
-        toast({
+        toast.error('Cannot connect to the backend server.');
+        uiToast({
           title: "Backend connection failed",
           description: "Cannot connect to the backend server.",
           variant: "destructive",
@@ -259,7 +274,8 @@ const Documents = () => {
     }
 
     setIsLoading(true);
-    toast({
+    toast.loading('Processing documents. This may take a moment.');
+    uiToast({
       title: "Processing documents",
       description: "Your documents are being analyzed. This may take a moment.",
     });
@@ -274,21 +290,25 @@ const Documents = () => {
         evaluation_method: evaluationMethod
       };
 
+      console.log('Sending comparison request:', requestData);
       const response = await apiClient.post('/compare-documents', requestData);
       
       if (response.data) {
-        toast({
+        toast.success('Analysis complete. Your comparison report is ready.');
+        uiToast({
           title: "Analysis complete",
           description: "Your comparison report is ready.",
         });
         
         navigate('/results');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error comparing documents:', error);
-      toast({
+      
+      toast.error('Comparison failed. Make sure the backend server is running.');
+      uiToast({
         title: "Comparison failed",
-        description: "There was an error analyzing your documents. Make sure the backend server is running.",
+        description: error.message || "There was an error analyzing your documents.",
         variant: "destructive",
       });
     } finally {
@@ -305,6 +325,8 @@ const Documents = () => {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-6 rounded relative" role="alert">
             <strong className="font-bold">Backend not connected: </strong> 
             <span className="block sm:inline">Make sure the backend server is running.</span>
+            <p className="mt-2">1. Run <code className="bg-gray-200 px-1 py-0.5 rounded">./run_backend.sh</code> or <code className="bg-gray-200 px-1 py-0.5 rounded">python backend/api.py</code> in your terminal</p>
+            <p className="mt-1">2. Backend URL: <code className="bg-gray-200 px-1 py-0.5 rounded">{apiUrl}</code></p>
             <Button 
               variant="outline" 
               size="sm" 
