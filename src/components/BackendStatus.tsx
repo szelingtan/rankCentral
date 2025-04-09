@@ -10,8 +10,11 @@ interface BackendStatusProps {
   className?: string;
 }
 
+// Define a type for status to prevent TypeScript comparison errors
+type StatusType = 'online' | 'offline' | 'checking';
+
 const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className = '' }) => {
-  const [status, setStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+  const [status, setStatus] = useState<StatusType>('checking');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
 
