@@ -34,7 +34,7 @@ def health_check():
     """Health check endpoint to verify backend is running properly"""
     try:
         # Test MongoDB connection if available
-        db_status = "connected" if db else "not connected"
+        db_status = "connected" if db is not None else "not connected"
         
         # Check if PDF upload folder is accessible
         folder_status = "accessible" if os.access(app.config['UPLOAD_FOLDER'], os.W_OK) else "not accessible"

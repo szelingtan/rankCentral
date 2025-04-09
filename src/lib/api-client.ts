@@ -2,6 +2,9 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
+// Track shown errors to prevent duplicates
+const shownErrors = new Set();
+
 // Create an axios instance for backend calls with proper error handling
 const apiClient = axios.create({
   // Use environment variable with fallback
@@ -29,6 +32,25 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Helper function to show toast without duplicates
+const showUniqueToast = (message, options) => {
+  const errorKey = `${options.id || ''}:${message}`;
+  
+  // Skip if already shown recently
+  if (shownErrors.has(errorKey)) {
+    return;
+  }
+  
+  // Add to tracking set and show toast
+  shownErrors.add(errorKey);
+  toast.error(message, options);
+  
+  // Remove from tracking after toast duration + buffer
+  setTimeout(() => {
+    shownErrors.delete(errorKey);
+  }, (options.duration || 5000) + 1000);
+};
+
 // Add a response interceptor with better error handling
 apiClient.interceptors.response.use(
   (response) => {
@@ -47,7 +69,7 @@ apiClient.interceptors.response.use(
       console.log('If using a different port, update VITE_API_URL in your .env file');
       
       // Toast with unique ID to prevent duplicates
-      toast.error('Backend server not available. Check if it is running.', {
+      showUniqueToast('Backend server not available. Check if it is running.', {
         id: 'network-error',
         duration: 5000,
       });
@@ -62,13 +84,14 @@ apiClient.interceptors.response.use(
     // Handle other API errors
     const status = error.response?.status;
     const message = error.response?.data?.message || error.message;
+    const endpoint = error.config?.url?.replace(/\//g, '-') || 'unknown';
     
     console.error(`API error (${status}):`, message);
     
     // Use error status and URL to create unique toast ID
-    const toastId = `api-error-${status}-${error.config?.url?.replace(/\//g, '-')}`;
+    const toastId = `api-error-${status}-${endpoint}`;
     
-    toast.error(`API error: ${message}`, {
+    showUniqueToast(`API error: ${message}`, {
       id: toastId,
       duration: 5000,
     });
@@ -91,16 +114,15 @@ export const checkBackendHealth = async () => {
     
     // Verify that the response has the expected structure
     if (response.data && typeof response.data === 'object') {
-      // Check for expected fields in health response
-      if ('status' in response.data) {
-        return {
-          isHealthy: response.data?.status === 'healthy',
-          message: response.data?.message || 'Backend is running',
-          error: null,
-          timestamp: response.data?.timestamp,
-          version: response.data?.version
-        };
-      }
+      // Return detailed health information
+      return {
+        isHealthy: response.data?.status === 'healthy',
+        message: response.data?.message || 'Backend is running',
+        error: null,
+        timestamp: response.data?.timestamp,
+        version: response.data?.version,
+        diagnostics: response.data?.diagnostics || {}
+      };
     }
     
     // If response structure is unexpected
@@ -111,12 +133,20 @@ export const checkBackendHealth = async () => {
       error: 'Invalid response format',
       data: response.data
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Health check failed with error:', error);
+    
+    // Extract more detailed error info
+    const errorMsg = error.originalError?.response?.data?.message || error.message || 'Unknown error';
+    
     return {
       isHealthy: false,
-      message: 'Backend connection failed',
-      error
+      message: `Backend connection failed: ${errorMsg}`,
+      error,
+      diagnostics: {
+        apiUrl: apiClient.defaults.baseURL,
+        errorCode: error.originalError?.code || 'unknown'
+      }
     };
   }
 };

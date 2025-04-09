@@ -29,14 +29,18 @@ def get_database(client, db_name):
 # Example usage in your backend server
 def setup_mongodb_connection():
     # Connect to MongoDB
+    if not connection_string:
+        print("Warning: MongoDB connection string is not set in environment variables")
+        return None
+        
     client = connect_to_mongodb(connection_string)
     
-    if client:
+    if client is not None:
         # Get the database
         db = get_database(client, "rankCentral_DB")
-        
         return db
     else:
+        print("Unable to connect to MongoDB. Check your connection string and ensure MongoDB is running.")
         return None
 
 # In your main server code (e.g., with Flask or FastAPI)
