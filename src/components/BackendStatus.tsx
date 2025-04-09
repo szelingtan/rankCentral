@@ -23,16 +23,20 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
     if (onStatusChange) onStatusChange('checking');
     
     try {
+      console.log('Checking backend health...');
       const health = await checkBackendHealth();
+      console.log('Health check result:', health);
       
       const newStatus: StatusType = health.isHealthy ? 'online' : 'offline';
       setStatus(newStatus);
       if (onStatusChange) onStatusChange(newStatus);
       
       if (!health.isHealthy) {
+        console.log('Backend health check failed, server is not responding.');
         toast.error('Backend server is not responding.');
       }
     } catch (error) {
+      console.error('Backend connection error:', error);
       const newStatus: StatusType = 'offline';
       setStatus(newStatus);
       if (onStatusChange) onStatusChange(newStatus);
@@ -108,4 +112,3 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
 };
 
 export default BackendStatus;
-
