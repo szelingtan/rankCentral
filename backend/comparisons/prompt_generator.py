@@ -136,7 +136,7 @@ class PromptGenerator:
         - Determine a clear winner or declare a tie if truly equal
         
         Respond with a JSON object containing these fields:
-        {
+        {{
             "criterion_name": "Custom Evaluation",
             "document_a_score": [score between 1-5],
             "document_a_analysis": [detailed analysis with specific examples],
@@ -145,7 +145,7 @@ class PromptGenerator:
             "comparative_analysis": [direct side-by-side comparison based on the custom instructions],
             "reasoning": [detailed justification for your decision],
             "winner": [either "A" or "B" or "Tie" if truly equal]
-        }
+        }}
         """
         
         return prompt

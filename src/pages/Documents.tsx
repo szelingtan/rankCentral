@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { toast, ToasterProps } from 'sonner';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,26 +55,6 @@ const defaultCriteria: Criterion[] = [
   },
 ];
 
-// Helper function to prevent duplicate toasts
-const shownToasts = new Set();
-const showUniqueToast = (message, type = 'error') => {
-  if (shownToasts.has(message)) return;
-  
-  shownToasts.add(message);
-  if (type === 'error') {
-    toast.error(message);
-  } else if (type === 'success') {
-    toast.success(message);
-  } else if (type === 'loading') {
-    toast.loading(message);
-  }
-  
-  // Remove from tracking after 5 seconds
-  setTimeout(() => {
-    shownToasts.delete(message);
-  }, 5000);
-};
-
 const Documents = () => {
   const [documents, setDocuments] = useState<Document[]>([
     { id: '1', name: 'Document 1', content: '' },
@@ -93,6 +73,22 @@ const Documents = () => {
   useEffect(() => {
     checkBackendStatus();
   }, []);
+
+  // Helper function to prevent duplicate toasts
+  const showUniqueToast = (message, type = 'error') => {
+    const toastConfig: ToasterProps = {
+      position: 'top-right',
+    };
+
+    const toastId =
+    type === 'success'
+      ? toast.success(message, toastConfig)
+      : type === 'loading'
+      ? toast.loading(message, toastConfig)
+      : toast.error(message, toastConfig);
+
+    return toastId
+  };
 
   const checkBackendStatus = async () => {
     setBackendStatus('checking');
@@ -243,7 +239,7 @@ const Documents = () => {
     }
 
     setIsLoading(true);
-    showUniqueToast('Processing documents. This may take a moment.', 'loading');
+    const processingToastId = showUniqueToast('Processing documents. This may take a moment.', 'loading');
 
     try {
       const requestData = {
@@ -272,6 +268,9 @@ const Documents = () => {
       showUniqueToast(error.message || "There was an error analyzing your documents.");
     } finally {
       setIsLoading(false);
+      if (processingToastId) {
+        toast.dismiss(processingToastId);
+      }
     }
   };
 
