@@ -1,5 +1,6 @@
 
 from typing import Dict, Any, List
+import base64
 
 class PromptGenerator:
     """Generates prompts for LLM document comparison"""

@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -145,14 +144,31 @@ def compare_documents():
             }]
         
         # Get the document contents
+        pdf_contents = {}
         if use_uploaded_pdfs:
             # Load PDFs from upload folder
             pdf_contents = pdf_processor.load_pdfs()
         else:
             # Use the document contents from the request
-            pdf_contents = {}
             for doc in documents_data:
-                pdf_contents[doc['name']] = doc['content']
+                doc_name = doc['name']
+                doc_content = doc['content']
+                
+                # Check if content is likely base64 encoded PDF
+                if doc_content.startswith('data:application/pdf;base64,') or (
+                    len(doc_content) > 100 and not doc_content.strip()[:20].isalpha()
+                ):
+                    # Process as base64 PDF
+                    try:
+                        extracted_text = pdf_processor.load_base64_pdf(doc_name, doc_content)
+                        pdf_contents[doc_name] = extracted_text
+                    except Exception as e:
+                        print(f"Error processing base64 PDF: {str(e)}")
+                        # Fallback to raw content if extraction fails
+                        pdf_contents[doc_name] = doc_content
+                else:
+                    # Use as plain text
+                    pdf_contents[doc_name] = doc_content
         
         # Get criteria
         criteria = criteria_manager.criteria
@@ -219,7 +235,6 @@ def compare_documents():
     except Exception as e:
         return jsonify({"error": f"Error during comparison: {str(e)}"}), 500
 
-# ... keep existing code (from @app.route('/api/download-report', methods=['GET']) through the end)
 @app.route('/api/download-report', methods=['GET'])
 def download_report():
     """Endpoint to download the generated Excel report"""

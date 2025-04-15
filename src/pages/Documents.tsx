@@ -55,6 +55,8 @@ const defaultCriteria: Criterion[] = [
   },
 ];
 
+const displayedToasts = new Set<string>();
+
 const Documents = () => {
   const [documents, setDocuments] = useState<Document[]>([
     { id: '1', name: 'Document 1', content: '' },
@@ -74,20 +76,32 @@ const Documents = () => {
     checkBackendStatus();
   }, []);
 
-  // Helper function to prevent duplicate toasts
-  const showUniqueToast = (message, type = 'error') => {
+  const showUniqueToast = (message: string, type = 'error') => {
+    const toastKey = `${type}:${message}`;
+    
+    if (displayedToasts.has(toastKey)) {
+      return null;
+    }
+    
+    displayedToasts.add(toastKey);
+    
     const toastConfig: ToasterProps = {
       position: 'top-right',
+      onDismiss: () => {
+        displayedToasts.delete(toastKey);
+      }
     };
 
-    const toastId =
-    type === 'success'
-      ? toast.success(message, toastConfig)
-      : type === 'loading'
-      ? toast.loading(message, toastConfig)
-      : toast.error(message, toastConfig);
+    let toastId;
+    if (type === 'success') {
+      toastId = toast.success(message, toastConfig);
+    } else if (type === 'loading') {
+      toastId = toast.loading(message, toastConfig);
+    } else {
+      toastId = toast.error(message, toastConfig);
+    }
 
-    return toastId
+    return toastId;
   };
 
   const checkBackendStatus = async () => {
@@ -131,6 +145,15 @@ const Documents = () => {
     setDocuments(
       documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc))
     );
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const uploadFiles = async (files: File[]) => {
@@ -191,18 +214,31 @@ const Documents = () => {
     }
   };
 
-  const handleDocumentUpload = (docId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocumentUpload = async (docId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      updateDocument(docId, 'content', content);
+    try {
+      updateDocument(docId, 'content', 'Loading file...');
       
-      showUniqueToast(`${file.name} has been loaded.`, 'success');
-    };
-    reader.readAsText(file);
+      if (file.type === 'application/pdf') {
+        const base64Content = await fileToBase64(file);
+        updateDocument(docId, 'content', base64Content);
+        showUniqueToast(`${file.name} has been loaded as PDF.`, 'success');
+      } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          updateDocument(docId, 'content', content);
+          showUniqueToast(`${file.name} has been loaded.`, 'success');
+        };
+        reader.readAsText(file);
+      }
+    } catch (error) {
+      console.error('Error loading file:', error);
+      updateDocument(docId, 'content', '');
+      showUniqueToast(`Failed to load ${file.name}. Please try again.`);
+    }
   };
 
   const handleSubmit = async () => {
@@ -256,7 +292,14 @@ const Documents = () => {
         evaluation_method: evaluationMethod
       };
 
-      console.log('Sending comparison request:', requestData);
+      console.log('Sending comparison request:', {
+        ...requestData,
+        documents: requestData.documents.map(d => ({
+          ...d,
+          content: d.content.length > 50 ? `${d.content.substring(0, 50)}... (${d.content.length} chars)` : d.content
+        }))
+      });
+      
       const response = await apiClient.post('/compare-documents', requestData);
       
       if (response.data) {
@@ -342,16 +385,30 @@ const Documents = () => {
                           />
                           <div className="flex items-center gap-2 text-sm text-gray-500 py-2 border rounded px-3 cursor-pointer">
                             <FileUp className="h-4 w-4" />
-                            Upload file (or enter text below)
+                            {doc.content && doc.content.startsWith('data:application/pdf;base64,') 
+                              ? 'PDF uploaded (click to change)'
+                              : 'Upload file (or enter text below)'}
                           </div>
                         </div>
                       </div>
-                      <Textarea
-                        placeholder="Enter document content here..."
-                        value={doc.content}
-                        onChange={(e) => updateDocument(doc.id, 'content', e.target.value)}
-                        className="min-h-[200px] resize-y"
-                      />
+                      {doc.content && doc.content.startsWith('data:application/pdf;base64,') ? (
+                        <div className="min-h-[200px] border rounded p-3 bg-gray-50 flex items-center justify-center">
+                          <div className="text-center">
+                            <svg className="h-10 w-10 text-red-500 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                            </svg>
+                            <p className="text-sm text-gray-600 font-medium">PDF uploaded</p>
+                            <p className="text-xs text-gray-500 mt-1">Base64 encoded ({Math.round(doc.content.length / 1024)} KB)</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <Textarea
+                          placeholder="Enter document content here..."
+                          value={doc.content}
+                          onChange={(e) => updateDocument(doc.id, 'content', e.target.value)}
+                          className="min-h-[200px] resize-y"
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 ))}

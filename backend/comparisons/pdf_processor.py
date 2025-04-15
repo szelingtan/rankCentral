@@ -1,7 +1,7 @@
-
 import os
 import fitz  # PyMuPDF
 import re
+import base64
 from typing import Dict
 
 class PDFProcessor:
@@ -57,6 +57,49 @@ class PDFProcessor:
                 print(f"Error loading {filename}: {str(e)}")
         
         return self.pdf_contents
+    
+    def load_base64_pdf(self, filename: str, base64_content: str) -> str:
+        """
+        Load a PDF from base64 encoded content and extract text
+        
+        Args:
+            filename: Name to use for the PDF
+            base64_content: Base64 encoded PDF content
+            
+        Returns:
+            Extracted text content from the PDF
+        """
+        try:
+            # Remove data URL prefix if present
+            if ',' in base64_content:
+                base64_content = base64_content.split(',', 1)[1]
+                
+            # Decode base64 content
+            pdf_bytes = base64.b64decode(base64_content)
+            
+            # Save temporarily to disk to use PyMuPDF
+            temp_file_path = os.path.join(self.pdf_folder, filename)
+            with open(temp_file_path, 'wb') as f:
+                f.write(pdf_bytes)
+            
+            # Use PyMuPDF to extract text
+            pdf_document = fitz.open(temp_file_path)
+            text = ""
+            for page_num in range(len(pdf_document)):
+                page = pdf_document.load_page(page_num)
+                text += page.get_text()
+            
+            pdf_document.close()
+            
+            # Store the extracted text
+            self.pdf_contents[filename] = text
+            print(f"Loaded base64 PDF: {filename} ({len(text)} characters)")
+            
+            return text
+            
+        except Exception as e:
+            print(f"Error loading base64 PDF {filename}: {str(e)}")
+            return ""
     
     def extract_criteria_sections(self) -> Dict[str, Dict[str, str]]:
         """
