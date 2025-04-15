@@ -200,11 +200,11 @@ class DocumentComparator:
         
         # If no relevant sections found or using custom prompt, use truncated content
         if not doc1_section:
-            doc1_section = doc1_content[:1500] + "... [truncated]"
-            print(f"  Document A '{doc1_name}': No specific section found for criterion '{criterion['name']}'. Using truncated content.")
+            doc1_section = doc1_content
+            print(f"  Document A '{doc1_name}': No specific section found for criterion '{criterion['name']}'.")
         if not doc2_section:
-            doc2_section = doc2_content[:1500] + "... [truncated]"
-            print(f"  Document B '{doc2_name}': No specific section found for criterion '{criterion['name']}'. Using truncated content.")
+            doc2_section = doc2_content
+            print(f"  Document B '{doc2_name}': No specific section found for criterion '{criterion['name']}'.")
         
         return doc1_section, doc2_section
     

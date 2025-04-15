@@ -6,18 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileUp, Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
 import CriteriaForm from '@/components/CriteriaForm';
 
 type Document = {
   id: string;
-  name: string;
   content: string;
   displayName?: string;
   fileSize?: string;
@@ -61,10 +59,7 @@ const defaultCriteria: Criterion[] = [
 const displayedToasts = new Set<string>();
 
 const Documents = () => {
-  const [documents, setDocuments] = useState<Document[]>([
-    { id: '1', name: 'Document 1', content: '' },
-    { id: '2', name: 'Document 2', content: '' },
-  ]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [useCustomCriteria, setUseCustomCriteria] = useState(false);
   const [criteria, setCriteria] = useState<Criterion[]>(defaultCriteria);
   const [activeTab, setActiveTab] = useState('documents');
@@ -136,11 +131,12 @@ const Documents = () => {
 
   const addDocument = () => {
     const newId = (documents.length + 1).toString();
-    const newDocName = `Document ${newId}`;
     setDocuments([
       ...documents,
-      { id: newId, name: newDocName, content: '' }
+      { id: newId, content: '' }
     ]);
+
+    console.log(documents)
   };
 
   const removeDocument = (id: string) => {
@@ -149,12 +145,23 @@ const Documents = () => {
       return;
     }
     setDocuments(documents.filter((doc) => doc.id !== id));
+
+    setDocumentNames(prev => {
+      const newState = { ...prev };
+      delete newState[id];
+      return newState;
+    });
+    showUniqueToast(`Document ${id} removed successfully.`, 'success');
+    console.log(documents)
   };
 
   const updateDocument = (id: string, field: keyof Document, value: string) => {
+
     setDocuments(
       documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc))
     );
+
+    console.log(documents)
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -203,7 +210,6 @@ const Documents = () => {
             
             newDocuments.push({
               id: newId,
-              name: fileName,
               displayName: fileName,
               content: file,
               fileSize: '-- KB' // Size will be calculated once loaded
@@ -218,6 +224,8 @@ const Documents = () => {
         });
         
         setDocuments(newDocuments);
+
+        console.log('Uploaded documents:', newDocuments);
       }
     } catch (error: any) {
       console.error('Error uploading files:', error);
@@ -239,11 +247,9 @@ const Documents = () => {
     if (!file) return;
 
     try {
-      updateDocument(docId, 'content', 'Loading file...');
-      
       // Update document name in the state
       const fileName = file.name;
-      updateDocument(docId, 'name', fileName);
+      updateDocument(docId, 'displayName', fileName);
       
       // Store the file name for display
       setDocumentNames(prev => ({
@@ -346,7 +352,7 @@ const Documents = () => {
       const requestData = {
         documents: documents.map(doc => ({
           id: doc.id,
-          name: doc.name,
+          name: doc.displayName,
           content: doc.content
         })),
         compare_method: 'mergesort',
@@ -419,68 +425,70 @@ const Documents = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {documents.map((doc) => (
-                  <Card key={doc.id} className="shadow-sm">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <Input
-                          value={doc.name}
-                          onChange={(e) => updateDocument(doc.id, 'name', e.target.value)}
-                          className="text-lg font-medium border-none focus:ring-0 p-0 h-auto"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeDocument(doc.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-gray-500" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="mb-3">
-                        <div className="relative">
-                          <input
-                            type="file"
-                            id={`file-${doc.id}`}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            onChange={(e) => handleDocumentUpload(doc.id, e)}
-                            accept=".txt,.doc,.docx,.pdf,.md"
+              {documents.length === 0 ? (
+                <div className="text-center text-gray-500">
+                  <p>No documents uploaded yet. Click "Add Document" or "Upload Multiple PDFs" to start.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {documents.map((doc) => (
+                    <Card key={doc.id} className="shadow-sm">
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-center">
+                          Document {doc.id}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeDocument(doc.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-gray-500" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="mb-3">
+                          <div className="relative">
+                            <input
+                              type="file"
+                              id={`file-${doc.id}`}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              onChange={(e) => handleDocumentUpload(doc.id, e)}
+                              accept=".txt,.doc,.docx,.pdf,.md"
+                            />
+                            <div className="flex items-center gap-2 text-sm text-gray-500 py-2 border rounded px-3 cursor-pointer">
+                              <FileText className="h-4 w-4" />
+                              {documentNames[doc.id] || doc.displayName || 'Upload file (or enter text below)'}
+                            </div>
+                          </div>
+                        </div>
+                        {doc.content && doc.content.startsWith('data:application/pdf;base64,') ? (
+                          <div className="min-h-[200px] border rounded p-3 bg-gray-50 flex items-center justify-center">
+                            <div className="text-center">
+                              <FileText className="h-10 w-10 text-brand-primary mx-auto mb-2" />
+                              <p className="text-sm font-medium">{doc.displayName || documentNames[doc.id]}</p>
+                              <p className="text-xs text-gray-500">
+                                {doc.fileSize || (doc.content ? `${(Math.round(doc.content.length / 1024 / 1.37)).toFixed(2)} KB` : '-- KB')}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <Textarea
+                            placeholder="Enter document content here..."
+                            value={doc.content}
+                            onChange={(e) => updateDocument(doc.id, 'content', e.target.value)}
+                            className="min-h-[200px] resize-y"
                           />
-                          <div className="flex items-center gap-2 text-sm text-gray-500 py-2 border rounded px-3 cursor-pointer">
-                            <FileText className="h-4 w-4" />
-                            {documentNames[doc.id] || doc.displayName || 'Upload file (or enter text below)'}
-                          </div>
-                        </div>
-                      </div>
-                      {doc.content && doc.content.startsWith('data:application/pdf;base64,') ? (
-                        <div className="min-h-[200px] border rounded p-3 bg-gray-50 flex items-center justify-center">
-                          <div className="text-center">
-                            <FileText className="h-10 w-10 text-brand-primary mx-auto mb-2" />
-                            <p className="text-sm font-medium">{doc.displayName || documentNames[doc.id] || doc.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {doc.fileSize || (doc.content ? `${(Math.round(doc.content.length / 1024 / 1.37)).toFixed(2)} KB` : '-- KB')}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <Textarea
-                          placeholder="Enter document content here..."
-                          value={doc.content}
-                          onChange={(e) => updateDocument(doc.id, 'content', e.target.value)}
-                          className="min-h-[200px] resize-y"
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
               <div className="flex justify-end mt-8">
                 <Button 
                   onClick={() => setActiveTab('evaluation')}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 fixed bottom-8 right-8"
                 >
                   Next: Choose Evaluation Method <ArrowRight className="h-4 w-4" />
                 </Button>
