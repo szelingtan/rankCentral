@@ -19,6 +19,8 @@ type Document = {
   id: string;
   name: string;
   content: string;
+  displayName?: string;
+  fileSize?: string;
 };
 
 type Criterion = {
@@ -134,9 +136,10 @@ const Documents = () => {
 
   const addDocument = () => {
     const newId = (documents.length + 1).toString();
+    const newDocName = `Document ${newId}`;
     setDocuments([
       ...documents,
-      { id: newId, name: `Document ${newId}`, content: '' },
+      { id: newId, name: newDocName, content: '' }
     ]);
   };
 
@@ -196,11 +199,21 @@ const Documents = () => {
         response.data.files.forEach((file: string, index: number) => {
           if (index < 10) {  // Limit to 10 documents
             const newId = (newDocuments.length + 1).toString();
+            const fileName = file;
+            
             newDocuments.push({
               id: newId,
-              name: file,
+              name: fileName,
+              displayName: fileName,
               content: file,
+              fileSize: '-- KB' // Size will be calculated once loaded
             });
+            
+            // Update document names mapping
+            setDocumentNames(prev => ({
+              ...prev,
+              [newId]: fileName
+            }));
           }
         });
         
@@ -228,21 +241,61 @@ const Documents = () => {
     try {
       updateDocument(docId, 'content', 'Loading file...');
       
+      // Update document name in the state
+      const fileName = file.name;
+      updateDocument(docId, 'name', fileName);
+      
+      // Store the file name for display
       setDocumentNames(prev => ({
         ...prev,
-        [docId]: file.name
+        [docId]: fileName
       }));
 
       if (file.type === 'application/pdf') {
         const base64Content = await fileToBase64(file);
         updateDocument(docId, 'content', base64Content);
-        showUniqueToast(`${file.name} has been loaded as PDF.`, 'success');
+        
+        // Calculate file size
+        const fileSizeKB = (file.size / 1024).toFixed(2);
+        
+        // Update documents with display information
+        setDocuments(docs => 
+          docs.map(doc => 
+            doc.id === docId 
+              ? { 
+                  ...doc, 
+                  content: base64Content,
+                  displayName: fileName,
+                  fileSize: `${fileSizeKB} KB`
+                }
+              : doc
+          )
+        );
+        
+        showUniqueToast(`${fileName} has been loaded as PDF.`, 'success');
       } else {
         const reader = new FileReader();
         reader.onload = (e) => {
           const content = e.target?.result as string;
-          updateDocument(docId, 'content', content);
-          showUniqueToast(`${file.name} has been loaded.`, 'success');
+          
+          // Calculate file size
+          const fileSizeKB = (file.size / 1024).toFixed(2);
+          
+          // Update documents with content and display information
+          setDocuments(docs => 
+            docs.map(doc => 
+              doc.id === docId 
+                ? { 
+                    ...doc, 
+                    content: content,
+                    displayName: fileName,
+                    fileSize: `${fileSizeKB} KB` 
+                  }
+                : doc
+            )
+          );
+          
+          showUniqueToast(`${fileName} has been loaded.`, 'success');
         };
         reader.readAsText(file);
       }
@@ -397,7 +450,7 @@ const Documents = () => {
                           />
                           <div className="flex items-center gap-2 text-sm text-gray-500 py-2 border rounded px-3 cursor-pointer">
                             <FileText className="h-4 w-4" />
-                            {documentNames[doc.id] || 'Upload file (or enter text below)'}
+                            {documentNames[doc.id] || doc.displayName || 'Upload file (or enter text below)'}
                           </div>
                         </div>
                       </div>
@@ -405,9 +458,9 @@ const Documents = () => {
                         <div className="min-h-[200px] border rounded p-3 bg-gray-50 flex items-center justify-center">
                           <div className="text-center">
                             <FileText className="h-10 w-10 text-brand-primary mx-auto mb-2" />
-                            <p className="text-sm font-medium">{documentNames[doc.id]}</p>
+                            <p className="text-sm font-medium">{doc.displayName || documentNames[doc.id] || doc.name}</p>
                             <p className="text-xs text-gray-500">
-                              {(Math.round(doc.content.length / 1024 / 1.37)).toFixed(2)} KB
+                              {doc.fileSize || (doc.content ? `${(Math.round(doc.content.length / 1024 / 1.37)).toFixed(2)} KB` : '-- KB')}
                             </p>
                           </div>
                         </div>
