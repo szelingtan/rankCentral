@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast, ToasterProps } from 'sonner';
+import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,20 +85,25 @@ const Documents = () => {
     
     displayedToasts.add(toastKey);
     
-    const toastConfig: ToasterProps = {
-      position: 'top-right',
-      onDismiss: () => {
-        displayedToasts.delete(toastKey);
-      }
-    };
-
     let toastId;
     if (type === 'success') {
-      toastId = toast.success(message, toastConfig);
+      toastId = toast.success(message, {
+        position: 'top-right',
+        onAutoClose: () => {
+          displayedToasts.delete(toastKey);
+        }
+      });
     } else if (type === 'loading') {
-      toastId = toast.loading(message, toastConfig);
+      toastId = toast.loading(message, {
+        position: 'top-right'
+      });
     } else {
-      toastId = toast.error(message, toastConfig);
+      toastId = toast.error(message, {
+        position: 'top-right',
+        onAutoClose: () => {
+          displayedToasts.delete(toastKey);
+        }
+      });
     }
 
     return toastId;
