@@ -16,26 +16,22 @@ class ReportGenerator:
     def __init__(self, output_dir: str):
         self.output_dir = output_dir
     
-    def generate_report(self, pdf_list: List[str], comparison_results: List[Dict], original_names: List[str] = None) -> str:
+    def generate_report(self, pdf_list: List[str], comparison_results: List[Dict]) -> str:
         """
         Generate a detailed evaluation report of all comparisons with full reasoning.
         
         Args:
             pdf_list: List of all PDFs that were compared
             comparison_results: Results of all pairwise comparisons
-            original_names: Original names of the documents (preserves display names)
             
         Returns:
             Path to the generated report
         """
-        # Use original document names if provided, otherwise use pdf_list
-        display_names = original_names if original_names else pdf_list
-        
         # Process data for different report sections
-        report_data = ComparisonDataProcessor.prepare_report_data(pdf_list, comparison_results, display_names)
+        report_data = ComparisonDataProcessor.prepare_report_data(pdf_list, comparison_results)
         criterion_data = ComparisonDataProcessor.prepare_criterion_data(comparison_results)
-        win_counts = ComparisonDataProcessor.calculate_win_counts(pdf_list, comparison_results, display_names)
-        criterion_summary = ComparisonDataProcessor.prepare_criterion_summary(pdf_list, comparison_results, display_names)
+        win_counts = ComparisonDataProcessor.calculate_win_counts(pdf_list, comparison_results)
+        criterion_summary = ComparisonDataProcessor.prepare_criterion_summary(pdf_list, comparison_results)
         
         # Save report to Excel
         return self._create_excel_report(

@@ -60,21 +60,13 @@ const Results = () => {
       const response = await apiClient.get('/report-history');
       console.log('Report history response:', response.data);
       
-      // Process the reports to ensure document names are correctly formatted
+      // Make sure each report has the correct document format
       const formattedReports = Array.isArray(response.data) 
         ? response.data.map((report: any) => ({
             ...report,
             // Ensure documents array is complete
-            documents: Array.isArray(report.documents) 
-              ? report.documents.map((doc: string) => {
-                  // If document name is just a number or "Document X", replace with a better label
-                  if (/^Document \d+$/.test(doc) || /^\d+$/.test(doc)) {
-                    return `Document ${doc.replace("Document ", "")}`;
-                  }
-                  return doc;
-                })
-              : [],
-            // Ensure top_ranked is a string with proper formatting
+            documents: Array.isArray(report.documents) ? report.documents : [],
+            // Ensure top_ranked is a string
             top_ranked: report.top_ranked || ''
           }))
         : [];
