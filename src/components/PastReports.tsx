@@ -53,8 +53,8 @@ const PastReports = ({ reports }: PastReportsProps) => {
     
     // Remove any directory path if present
     const fileName = fullPath.split('/').pop() || fullPath;
-    
-    return fileName;
+    // Remove file extension if present
+    return fileName.split('.')[0] || fileName;
   };
 
   return (
