@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { FileText, Trash2, ArrowRight, Upload } from 'lucide-react';
@@ -58,10 +59,7 @@ const defaultCriteria: Criterion[] = [
 const displayedToasts = new Set<string>();
 
 const Documents = () => {
-  const [documents, setDocuments] = useState<Document[]>([
-    { id: '1', content: '' },
-    { id: '2', content: '' }
-  ]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [useCustomCriteria, setUseCustomCriteria] = useState(false);
   const [criteria, setCriteria] = useState<Criterion[]>(defaultCriteria);
   const [activeTab, setActiveTab] = useState('documents');
@@ -392,8 +390,10 @@ const Documents = () => {
               </div>
 
               {documents.length === 0 ? (
-                <div className="text-center text-gray-500">
-                  <p>No documents uploaded yet. Click "Upload PDF(s)" to start.</p>
+                <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-2">No documents uploaded yet.</p>
+                  <p className="text-gray-500">Click "Upload PDF(s)" to start.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
