@@ -66,7 +66,9 @@ const PastReports = ({ reports }: PastReportsProps) => {
                       Created: {new Date(report.timestamp).toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Documents: {Array.isArray(report.documents) ? report.documents.join(', ') : 'N/A'}
+                      Documents: {Array.isArray(report.documents) && report.documents.length > 0 
+                        ? report.documents.join(', ') 
+                        : 'N/A'}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
                       Top ranked: <span className="font-medium">{report.top_ranked || 'N/A'}</span>
