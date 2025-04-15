@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FileText } from 'lucide-react';
+import { FileText, Trash2, ArrowRight, Upload } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, Trash2, ArrowRight, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
 import CriteriaForm from '@/components/CriteriaForm';
@@ -135,8 +134,6 @@ const Documents = () => {
       ...documents,
       { id: newId, content: '' }
     ]);
-
-    console.log(documents)
   };
 
   const removeDocument = (id: string) => {
@@ -151,17 +148,13 @@ const Documents = () => {
       delete newState[id];
       return newState;
     });
-    showUniqueToast(`Document ${id} removed successfully.`, 'success');
-    console.log(documents)
+    showUniqueToast(`Document removed successfully.`, 'success');
   };
 
   const updateDocument = (id: string, field: keyof Document, value: string) => {
-
     setDocuments(
       documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc))
     );
-
-    console.log(documents)
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -173,7 +166,7 @@ const Documents = () => {
     });
   };
 
-  const uploadFiles = async (files: File[]) => {
+  const uploadFiles = async (files: File[], docId?: string) => {
     if (files.length === 0) return;
     
     setIsLoading(true);
@@ -186,12 +179,59 @@ const Documents = () => {
         }
       }
       
+      if (docId) {
+        const file = files[0];
+        const fileName = file.name;
+        const fileSizeKB = (file.size / 1024).toFixed(2);
+        
+        if (file.type === 'application/pdf') {
+          const formData = new FormData();
+          formData.append('files[]', file);
+          
+          const response = await apiClient.post('/upload-pdfs', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            }
+          });
+          
+          if (response.data.files && response.data.files.length > 0) {
+            updateDocument(docId, 'content', response.data.files[0]);
+            updateDocument(docId, 'displayName', fileName);
+            updateDocument(docId, 'fileSize', `${fileSizeKB} KB`);
+            
+            setDocumentNames(prev => ({
+              ...prev,
+              [docId]: fileName
+            }));
+            
+            showUniqueToast(`${fileName} has been loaded.`, 'success');
+          }
+        } else {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const content = e.target?.result as string;
+            updateDocument(docId, 'content', content);
+            updateDocument(docId, 'displayName', fileName);
+            updateDocument(docId, 'fileSize', `${fileSizeKB} KB`);
+            
+            setDocumentNames(prev => ({
+              ...prev,
+              [docId]: fileName
+            }));
+            
+            showUniqueToast(`${fileName} has been loaded.`, 'success');
+          };
+          reader.readAsText(file);
+        }
+        
+        setIsLoading(false);
+        return;
+      }
+      
       const formData = new FormData();
       files.forEach(file => {
         formData.append('files[]', file);
       });
-      
-      console.log('Uploading files to:', `${apiUrl}/api/upload-pdfs`);
       
       const response = await apiClient.post('/upload-pdfs', formData, {
         headers: {
@@ -203,19 +243,19 @@ const Documents = () => {
         showUniqueToast(`Successfully uploaded ${response.data.files.length} files.`, 'success');
         
         const newDocuments = [...documents];
-        response.data.files.forEach((file: string, index: number) => {
+        response.data.files.forEach((fileContent: string, index: number) => {
           if (index < 10) {  // Limit to 10 documents
             const newId = (newDocuments.length + 1).toString();
-            const fileName = file;
+            const fileName = files[index].name;
+            const fileSizeKB = (files[index].size / 1024).toFixed(2);
             
             newDocuments.push({
               id: newId,
               displayName: fileName,
-              content: file,
-              fileSize: '-- KB' // Size will be calculated once loaded
+              content: fileContent,
+              fileSize: `${fileSizeKB} KB`
             });
             
-            // Update document names mapping
             setDocumentNames(prev => ({
               ...prev,
               [newId]: fileName
@@ -224,8 +264,6 @@ const Documents = () => {
         });
         
         setDocuments(newDocuments);
-
-        console.log('Uploaded documents:', newDocuments);
       }
     } catch (error: any) {
       console.error('Error uploading files:', error);
@@ -242,73 +280,10 @@ const Documents = () => {
     }
   };
 
-  const handleDocumentUpload = async (docId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      // Update document name in the state
-      const fileName = file.name;
-      updateDocument(docId, 'displayName', fileName);
-      
-      // Store the file name for display
-      setDocumentNames(prev => ({
-        ...prev,
-        [docId]: fileName
-      }));
-
-      if (file.type === 'application/pdf') {
-        const base64Content = await fileToBase64(file);
-        updateDocument(docId, 'content', base64Content);
-        
-        // Calculate file size
-        const fileSizeKB = (file.size / 1024).toFixed(2);
-        
-        // Update documents with display information
-        setDocuments(docs => 
-          docs.map(doc => 
-            doc.id === docId 
-              ? { 
-                  ...doc, 
-                  content: base64Content,
-                  displayName: fileName,
-                  fileSize: `${fileSizeKB} KB`
-                }
-              : doc
-          )
-        );
-        
-        showUniqueToast(`${fileName} has been loaded as PDF.`, 'success');
-      } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          
-          // Calculate file size
-          const fileSizeKB = (file.size / 1024).toFixed(2);
-          
-          // Update documents with content and display information
-          setDocuments(docs => 
-            docs.map(doc => 
-              doc.id === docId 
-                ? { 
-                    ...doc, 
-                    content: content,
-                    displayName: fileName,
-                    fileSize: `${fileSizeKB} KB` 
-                  }
-                : doc
-            )
-          );
-          
-          showUniqueToast(`${fileName} has been loaded.`, 'success');
-        };
-        reader.readAsText(file);
-      }
-    } catch (error) {
-      console.error('Error loading file:', error);
-      updateDocument(docId, 'content', '');
-      showUniqueToast(`Failed to load ${file.name}. Please try again.`);
+  const handleDocumentUpload = (docId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      uploadFiles([files[0]], docId);
     }
   };
 
@@ -415,7 +390,7 @@ const Documents = () => {
                     />
                     <Button variant="outline" className="flex items-center gap-2">
                       <Upload className="h-4 w-4" />
-                      Upload Multiple PDFs
+                      Upload PDF(s)
                     </Button>
                   </div>
                   <Button onClick={addDocument} className="flex items-center gap-1">
@@ -427,7 +402,7 @@ const Documents = () => {
 
               {documents.length === 0 ? (
                 <div className="text-center text-gray-500">
-                  <p>No documents uploaded yet. Click "Add Document" or "Upload Multiple PDFs" to start.</p>
+                  <p>No documents uploaded yet. Click "Add Document" or "Upload PDF(s)" to start.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -435,7 +410,9 @@ const Documents = () => {
                     <Card key={doc.id} className="shadow-sm">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-center">
-                          Document {doc.id}
+                          <div className="truncate">
+                            {doc.displayName ? doc.displayName : `Document ${doc.id}`}
+                          </div>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -453,19 +430,20 @@ const Documents = () => {
                               id={`file-${doc.id}`}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                               onChange={(e) => handleDocumentUpload(doc.id, e)}
-                              accept=".txt,.doc,.docx,.pdf,.md"
+                              accept=".pdf,.txt,.doc,.docx,.md"
                             />
                             <div className="flex items-center gap-2 text-sm text-gray-500 py-2 border rounded px-3 cursor-pointer">
                               <FileText className="h-4 w-4" />
-                              {documentNames[doc.id] || doc.displayName || 'Upload file (or enter text below)'}
+                              {doc.displayName || 'Upload file (or enter text below)'}
                             </div>
                           </div>
                         </div>
-                        {doc.content && doc.content.startsWith('data:application/pdf;base64,') ? (
+                        {doc.content && doc.content.startsWith('data:application/pdf;base64,') || 
+                         doc.content && doc.fileSize ? (
                           <div className="min-h-[200px] border rounded p-3 bg-gray-50 flex items-center justify-center">
                             <div className="text-center">
                               <FileText className="h-10 w-10 text-brand-primary mx-auto mb-2" />
-                              <p className="text-sm font-medium">{doc.displayName || documentNames[doc.id]}</p>
+                              <p className="text-sm font-medium">{doc.displayName}</p>
                               <p className="text-xs text-gray-500">
                                 {doc.fileSize || (doc.content ? `${(Math.round(doc.content.length / 1024 / 1.37)).toFixed(2)} KB` : '-- KB')}
                               </p>
