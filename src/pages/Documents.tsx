@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { FileText } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,6 +70,7 @@ const Documents = () => {
   const [customPrompt, setCustomPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [documentNames, setDocumentNames] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
   
@@ -226,6 +228,11 @@ const Documents = () => {
     try {
       updateDocument(docId, 'content', 'Loading file...');
       
+      setDocumentNames(prev => ({
+        ...prev,
+        [docId]: file.name
+      }));
+
       if (file.type === 'application/pdf') {
         const base64Content = await fileToBase64(file);
         updateDocument(docId, 'content', base64Content);
@@ -389,21 +396,19 @@ const Documents = () => {
                             accept=".txt,.doc,.docx,.pdf,.md"
                           />
                           <div className="flex items-center gap-2 text-sm text-gray-500 py-2 border rounded px-3 cursor-pointer">
-                            <FileUp className="h-4 w-4" />
-                            {doc.content && doc.content.startsWith('data:application/pdf;base64,') 
-                              ? 'PDF uploaded (click to change)'
-                              : 'Upload file (or enter text below)'}
+                            <FileText className="h-4 w-4" />
+                            {documentNames[doc.id] || 'Upload file (or enter text below)'}
                           </div>
                         </div>
                       </div>
                       {doc.content && doc.content.startsWith('data:application/pdf;base64,') ? (
                         <div className="min-h-[200px] border rounded p-3 bg-gray-50 flex items-center justify-center">
                           <div className="text-center">
-                            <svg className="h-10 w-10 text-red-500 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-                            </svg>
-                            <p className="text-sm text-gray-600 font-medium">PDF uploaded</p>
-                            <p className="text-xs text-gray-500 mt-1">Base64 encoded ({Math.round(doc.content.length / 1024)} KB)</p>
+                            <FileText className="h-10 w-10 text-brand-primary mx-auto mb-2" />
+                            <p className="text-sm font-medium">{documentNames[doc.id]}</p>
+                            <p className="text-xs text-gray-500">
+                              {(Math.round(doc.content.length / 1024 / 1.37)).toFixed(2)} KB
+                            </p>
                           </div>
                         </div>
                       ) : (
