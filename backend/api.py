@@ -192,10 +192,10 @@ def compare_documents():
         # Store report metadata in MongoDB
         if db is not None:
             try:
-                # Store only metadata about the report
+                # Store complete document names to ensure they display properly
                 report_data = {
                     "timestamp": datetime.now().isoformat(),
-                    "documents": pdf_list,
+                    "documents": pdf_list,  # This contains the actual document names
                     "top_ranked": results[0] if results else None,
                     "report_path": report_path,
                     "criteria_count": len(criteria),

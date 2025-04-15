@@ -46,6 +46,17 @@ const PastReports = ({ reports }: PastReportsProps) => {
     }
   };
 
+  // Helper function to get actual filename without path and extension
+  const extractFileName = (fullPath: string): string => {
+    // Check if the string looks like a filename
+    if (typeof fullPath !== 'string') return 'Unknown';
+    
+    // Remove any directory path if present
+    const fileName = fullPath.split('/').pop() || fullPath;
+    
+    return fileName;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -67,11 +78,11 @@ const PastReports = ({ reports }: PastReportsProps) => {
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
                       Documents: {Array.isArray(report.documents) && report.documents.length > 0 
-                        ? report.documents.join(', ') 
+                        ? report.documents.map(doc => extractFileName(doc)).join(', ') 
                         : 'N/A'}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
-                      Top ranked: <span className="font-medium">{report.top_ranked || 'N/A'}</span>
+                      Top ranked: <span className="font-medium">{extractFileName(report.top_ranked) || 'N/A'}</span>
                     </p>
                     {report.evaluation_method && (
                       <p className="text-sm text-gray-600 mt-1">

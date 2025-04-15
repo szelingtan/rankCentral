@@ -60,9 +60,20 @@ const Results = () => {
       const response = await apiClient.get('/report-history');
       console.log('Report history response:', response.data);
       
-      setPastReports(Array.isArray(response.data) ? response.data : []);
+      // Make sure each report has the correct document format
+      const formattedReports = Array.isArray(response.data) 
+        ? response.data.map((report: any) => ({
+            ...report,
+            // Ensure documents array is complete
+            documents: Array.isArray(report.documents) ? report.documents : [],
+            // Ensure top_ranked is a string
+            top_ranked: report.top_ranked || ''
+          }))
+        : [];
       
-      if (response.data.length === 0) {
+      setPastReports(formattedReports);
+      
+      if (formattedReports.length === 0) {
         toast.info("You haven't generated any comparison reports yet.");
         uiToast({
           title: "No reports found",
