@@ -45,9 +45,11 @@ class DocumentComparator:
         doc_a_weighted_score = 0
         doc_b_weighted_score = 0
         
-        # Extract criteria sections if needed
-        if self.pdf_processor and not hasattr(self.pdf_processor, 'extracted_criteria'):
-            self.pdf_processor.extract_criteria_sections()
+        # Make sure pdf_processor has criteria_sections initialized (ensuring backward compatibility)
+        if self.pdf_processor:
+            if not hasattr(self.pdf_processor, 'criteria_sections'):
+                self.pdf_processor.criteria_sections = {}
+                self.pdf_processor.extract_criteria_sections()
         
         # Process each criterion individually
         for criterion in self.criteria:
@@ -163,6 +165,7 @@ class DocumentComparator:
         Returns:
             Tuple of relevant sections from both documents
         """
+        # ... keep existing code
         doc1_content = self.documents[doc1_name]
         doc2_content = self.documents[doc2_name]
         
@@ -221,6 +224,7 @@ class DocumentComparator:
         Returns:
             Tuple of (overall_winner, winner_name, explanation)
         """
+        # ... keep existing code
         # Determine overall winner based on accumulated weighted scores
         overall_winner = "A" if doc_a_weighted_score > doc_b_weighted_score else "B"
         if doc_a_weighted_score == doc_b_weighted_score:

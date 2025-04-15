@@ -1,3 +1,4 @@
+
 import os
 import fitz  # PyMuPDF
 import re
@@ -20,6 +21,7 @@ class PDFProcessor:
         self.pdf_folder = pdf_folder
         self.pdf_contents = {}
         self.extracted_criteria = {}
+        self.criteria_sections = {}  # Initialize the criteria_sections attribute
     
     def load_pdfs(self) -> Dict[str, str]:
         """
@@ -256,4 +258,4 @@ class PDFProcessor:
                 return content
         
         # No match found
-        return self.criteria_sections[document_name].get(criterion_name, "")
+        return self.criteria_sections.get(document_name, {}).get(criterion_name, "")
