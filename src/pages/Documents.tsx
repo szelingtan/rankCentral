@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FileText, Trash2, ArrowRight, Upload, Plus } from 'lucide-react';
+import { FileText, Trash2, ArrowRight, Upload } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -58,7 +58,10 @@ const defaultCriteria: Criterion[] = [
 const displayedToasts = new Set<string>();
 
 const Documents = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([
+    { id: '1', content: '' },
+    { id: '2', content: '' }
+  ]);
   const [useCustomCriteria, setUseCustomCriteria] = useState(false);
   const [criteria, setCriteria] = useState<Criterion[]>(defaultCriteria);
   const [activeTab, setActiveTab] = useState('documents');
@@ -126,14 +129,6 @@ const Documents = () => {
       setBackendStatus('offline');
       showUniqueToast('Backend server is not available. Please start the backend server.');
     }
-  };
-
-  const addDocument = () => {
-    const newId = (documents.length + 1).toString();
-    setDocuments([
-      ...documents,
-      { id: newId, content: '' }
-    ]);
   };
 
   const removeDocument = (id: string) => {
@@ -393,16 +388,12 @@ const Documents = () => {
                       Upload PDF(s)
                     </Button>
                   </div>
-                  <Button onClick={addDocument} className="flex items-center gap-1">
-                    <Plus className="h-4 w-4" />
-                    Add Document
-                  </Button>
                 </div>
               </div>
 
               {documents.length === 0 ? (
                 <div className="text-center text-gray-500">
-                  <p>No documents uploaded yet. Click "Add Document" or "Upload PDF(s)" to start.</p>
+                  <p>No documents uploaded yet. Click "Upload PDF(s)" to start.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
