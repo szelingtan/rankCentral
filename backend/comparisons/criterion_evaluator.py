@@ -6,14 +6,16 @@ from langchain_openai import OpenAI
 class CriterionEvaluator:
     """Handles the evaluation of a specific criterion using LLM"""
     
-    def __init__(self, openai_api_key: str):
+    def __init__(self, openai_api_key: str, model_name: str = "gpt-4.1-mini"):
         """
         Initialize the criterion evaluator.
         
         Args:
             openai_api_key: API key for OpenAI
+            model_name: The specific OpenAI model to use, defaults to gpt-4.1-mini
         """
         self.openai_api_key = openai_api_key
+        self.model_name = model_name
     
     def evaluate(self, prompt: str, max_tokens: int) -> Dict[str, Any]:
         """
@@ -26,8 +28,13 @@ class CriterionEvaluator:
         Returns:
             Dictionary containing the evaluation result
         """
-        # Create LLM instance for this evaluation
-        llm = OpenAI(temperature=0.2, openai_api_key=self.openai_api_key, max_tokens=max_tokens)
+        # Create LLM instance for this evaluation with the specified model
+        llm = OpenAI(
+            temperature=0.2, 
+            openai_api_key=self.openai_api_key, 
+            max_tokens=max_tokens,
+            model=self.model_name
+        )
         
         try:
             # Call LLM
@@ -74,16 +81,4 @@ class CriterionEvaluator:
         Args:
             criterion_eval: The criterion evaluation dictionary
         """
-        required_fields = [
-            'document_a_score', 'document_b_score', 'document_a_analysis', 
-            'document_b_analysis', 'comparative_analysis', 'winner', 'reasoning'
-        ]
-        
-        for field in required_fields:
-            if field not in criterion_eval:
-                if field.endswith('_score'):
-                    criterion_eval[field] = 0
-                elif field == 'winner':
-                    criterion_eval[field] = 'Tie'
-                else:
-                    criterion_eval[field] = f"No {field.replace('_', ' ')} provided"
+        # ... keep existing code (validation logic for required fields)

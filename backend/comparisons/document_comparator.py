@@ -1,4 +1,3 @@
-
 from typing import Dict, List, Any, Tuple
 import json
 import tiktoken
@@ -9,7 +8,7 @@ from .prompt_generator import PromptGenerator
 class DocumentComparator:
     """Handles the comparison between two documents across multiple criteria"""
     
-    def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], openai_api_key: str, pdf_processor=None, use_custom_prompt=False):
+    def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], openai_api_key: str, pdf_processor=None, use_custom_prompt=False, model_name="gpt-4.1-mini"):
         """
         Initialize the document comparator.
         
@@ -19,14 +18,16 @@ class DocumentComparator:
             openai_api_key: API key for OpenAI
             pdf_processor: Optional PDFProcessor instance for section extraction
             use_custom_prompt: Whether to use a custom prompt for evaluation
+            model_name: The specific OpenAI model to use
         """
         self.documents = documents
         self.criteria = criteria
         self.openai_api_key = openai_api_key
         self.pdf_processor = pdf_processor
         self.use_custom_prompt = use_custom_prompt
-        self.tokenizer = tiktoken.encoding_for_model("gpt-4")
-        self.criterion_evaluator = CriterionEvaluator(openai_api_key)
+        self.model_name = model_name
+        self.tokenizer = tiktoken.encoding_for_model("gpt-4")  # Use gpt-4 encoding for token counting
+        self.criterion_evaluator = CriterionEvaluator(openai_api_key, model_name)
         self.prompt_generator = PromptGenerator()
     
     def compare(self, doc1_name: str, doc2_name: str) -> Dict[str, Any]:
@@ -40,7 +41,6 @@ class DocumentComparator:
         Returns:
             Dictionary with comparison results
         """
-        # ... keep existing code (function for comparing two documents)
         # Initialize storage for evaluation results
         all_criterion_evaluations = []
         doc_a_weighted_score = 0
@@ -234,7 +234,6 @@ class DocumentComparator:
         Returns:
             Tuple of (overall_winner, winner_name, explanation)
         """
-        # ... keep existing code (determining the overall winner)
         # Determine overall winner based on accumulated weighted scores
         overall_winner = "A" if doc_a_weighted_score > doc_b_weighted_score else "B"
         if doc_a_weighted_score == doc_b_weighted_score:

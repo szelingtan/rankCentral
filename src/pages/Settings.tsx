@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 const Settings = () => {
   const [apiKey, setApiKey] = useState('');
   const [savedApiKey, setSavedApiKey] = useState<string | null>(null);
-  const [modelType, setModelType] = useState('gpt-4');
+  const [modelType, setModelType] = useState('gpt-4.1-mini');  // Updated default to gpt-4.1-mini
   const [maxDocuments, setMaxDocuments] = useState(10);
   const [maxLength, setMaxLength] = useState(10000);
   const [debugMode, setDebugMode] = useState(false);
@@ -90,6 +90,7 @@ const Settings = () => {
                     onChange={(e) => setModelType(e.target.value)}
                     className="w-full p-2 border rounded-md"
                   >
+                    <option value="gpt-4.1-mini">GPT-4.1-mini (Balanced performance and cost)</option>
                     <option value="gpt-3.5">GPT-3.5 (Faster, more economical)</option>
                     <option value="gpt-4">GPT-4 (Higher quality analysis)</option>
                     <option value="claude-3">Claude 3 (Alternative option)</option>
