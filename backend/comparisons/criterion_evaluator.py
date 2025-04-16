@@ -1,7 +1,7 @@
 
 from typing import Dict, Any
 import json
-from langchain_openai import OpenAI
+from openai import OpenAI
 
 class CriterionEvaluator:
     """Handles the evaluation of a specific criterion using LLM"""
@@ -28,17 +28,24 @@ class CriterionEvaluator:
         Returns:
             Dictionary containing the evaluation result
         """
-        # Create LLM instance for this evaluation with the specified model
-        llm = OpenAI(
-            temperature=0.2, 
-            openai_api_key=self.openai_api_key, 
-            max_tokens=max_tokens,
-            model=self.model_name
+
+        client = OpenAI(
+            api_key = self.openai_api_key,
         )
         
         try:
-            # Call LLM
-            result = llm.invoke(prompt)
+            messages = []
+            messages.append({"role": "user", "content": prompt})
+
+            # Call LLM and invoke prompt
+            result = client.chat.completions.create(
+                temperature=0.2, 
+                max_tokens=max_tokens,
+                model=self.model_name,
+                messages=messages
+            )
+
+            result = result.choices[0].message.content
             
             # Process the result
             result = result.strip()

@@ -1,7 +1,5 @@
 from typing import Dict, List, Any, Tuple
-import json
 import tiktoken
-from langchain_openai import OpenAI
 from .criterion_evaluator import CriterionEvaluator
 from .prompt_generator import PromptGenerator
 
@@ -56,7 +54,8 @@ class DocumentComparator:
             print(f"  Evaluating criterion: {criterion_name}")
             
             # Get full document content for this criterion
-            doc1_content, doc2_content = self._get_criterion_sections(doc1_name, doc2_name, criterion)
+            doc1_content = self.documents[doc1_name]
+            doc2_content = self.documents[doc2_name]
             
             # Generate a prompt for this criterion
             if self.use_custom_prompt or criterion.get('is_custom_prompt', False):
@@ -147,33 +146,6 @@ class DocumentComparator:
         
         print(f"Comparison complete: Winner is {winner_name}")
         return comparison_result
-    
-    def _get_criterion_sections(self, doc1_name: str, doc2_name: str, criterion: Dict) -> Tuple[str, str]:
-        """
-        Get the full document content for both documents.
-        
-        Args:
-            doc1_name: Name of first document
-            doc2_name: Name of second document
-            criterion: The criterion dictionary (not used for section extraction anymore)
-            
-        Returns:
-            Tuple of full document content from both documents
-        """
-        # Make sure we have the document contents
-        if doc1_name not in self.documents or doc2_name not in self.documents:
-            print(f"Warning: Document not found in document dictionary. Doc1: {doc1_name in self.documents}, Doc2: {doc2_name in self.documents}")
-            return "", ""
-            
-        # Get full document content
-        doc1_content = self.documents[doc1_name]
-        doc2_content = self.documents[doc2_name]
-        
-        # Log a preview of the document content
-        print(f"Document content preview for {doc1_name}: {doc1_content[:100]}...")
-        print(f"Document content preview for {doc2_name}: {doc2_content[:100]}...")
-        
-        return doc1_content, doc2_content
     
     def _determine_winner(self, doc1_name: str, doc2_name: str, 
                          doc_a_weighted_score: float, doc_b_weighted_score: float,
