@@ -46,12 +46,6 @@ class DocumentComparator:
         doc_a_weighted_score = 0
         doc_b_weighted_score = 0
         
-        # Make sure pdf_processor has criteria_sections initialized (ensuring backward compatibility)
-        if self.pdf_processor:
-            if not hasattr(self.pdf_processor, 'criteria_sections'):
-                self.pdf_processor.criteria_sections = {}
-                self.pdf_processor.extract_criteria_sections()
-        
         # Process each criterion individually
         for criterion in self.criteria:
             print(f"Processing criterion: {criterion}")
@@ -61,8 +55,8 @@ class DocumentComparator:
             
             print(f"  Evaluating criterion: {criterion_name}")
             
-            # Get relevant sections for this criterion
-            doc1_section, doc2_section = self._get_criterion_sections(doc1_name, doc2_name, criterion)
+            # Get full document content for this criterion
+            doc1_content, doc2_content = self._get_criterion_sections(doc1_name, doc2_name, criterion)
             
             # Generate a prompt for this criterion
             if self.use_custom_prompt or criterion.get('is_custom_prompt', False):
@@ -70,8 +64,8 @@ class DocumentComparator:
                 prompt = self.prompt_generator.generate_custom_prompt(
                     doc1_name,
                     doc2_name,
-                    doc1_section,
-                    doc2_section,
+                    doc1_content,
+                    doc2_content,
                     criterion['description']  # The custom prompt is in the description field
                 )
             else:
@@ -79,8 +73,8 @@ class DocumentComparator:
                 prompt = self.prompt_generator.generate_criterion_prompt(
                     doc1_name,
                     doc2_name,
-                    doc1_section,
-                    doc2_section,
+                    doc1_content,
+                    doc2_content,
                     criterion
                 )
             
@@ -156,15 +150,15 @@ class DocumentComparator:
     
     def _get_criterion_sections(self, doc1_name: str, doc2_name: str, criterion: Dict) -> Tuple[str, str]:
         """
-        Get the relevant sections for a criterion from both documents.
+        Get the full document content for both documents.
         
         Args:
             doc1_name: Name of first document
             doc2_name: Name of second document
-            criterion: The criterion dictionary
+            criterion: The criterion dictionary (not used for section extraction anymore)
             
         Returns:
-            Tuple of relevant sections from both documents
+            Tuple of full document content from both documents
         """
         # Make sure we have the document contents
         if doc1_name not in self.documents or doc2_name not in self.documents:
@@ -175,48 +169,11 @@ class DocumentComparator:
         doc1_content = self.documents[doc1_name]
         doc2_content = self.documents[doc2_name]
         
-        # Log a preview of the document content to confirm it's not just the filename
+        # Log a preview of the document content
         print(f"Document content preview for {doc1_name}: {doc1_content[:100]}...")
         print(f"Document content preview for {doc2_name}: {doc2_content[:100]}...")
         
-        # Initialize with empty sections
-        doc1_section = ""
-        doc2_section = ""
-        
-        if self.pdf_processor and not self.use_custom_prompt and not criterion.get('is_custom_prompt', False):
-            # Direct search terms - using the criterion name and ID only
-            search_terms = [
-                criterion['name'],
-                f"Criterion {criterion.get('id', '')}" if criterion.get('id', '') else ""
-            ]
-            
-            for term in search_terms:
-                if term and term.strip():
-                    doc1_section = self.pdf_processor.get_criteria_content(doc1_name, term)
-                    if doc1_section:
-                        print(f"  Document A '{doc1_name}': Found content for criterion '{criterion['name']}' using search term '{term}'")
-                        preview = doc1_section[:100] + "..." if len(doc1_section) > 100 else doc1_section
-                        print(f"  Preview: {preview}")
-                        break
-            
-            for term in search_terms:
-                if term and term.strip():
-                    doc2_section = self.pdf_processor.get_criteria_content(doc2_name, term)
-                    if doc2_section:
-                        print(f"  Document B '{doc2_name}': Found content for criterion '{criterion['name']}' using search term '{term}'")
-                        preview = doc2_section[:100] + "..." if len(doc2_section) > 100 else doc2_section
-                        print(f"  Preview: {preview}")
-                        break
-        
-        # If no relevant sections found or using custom prompt, use full document content
-        if not doc1_section:
-            doc1_section = doc1_content
-            print(f"  Document A '{doc1_name}': No specific section found for criterion '{criterion['name']}', using full document.")
-        if not doc2_section:
-            doc2_section = doc2_content
-            print(f"  Document B '{doc2_name}': No specific section found for criterion '{criterion['name']}', using full document.")
-        
-        return doc1_section, doc2_section
+        return doc1_content, doc2_content
     
     def _determine_winner(self, doc1_name: str, doc2_name: str, 
                          doc_a_weighted_score: float, doc_b_weighted_score: float,
