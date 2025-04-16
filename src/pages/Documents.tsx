@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
 import CriteriaForm from '@/components/CriteriaForm';
+import { request } from 'http';
 
 type Document = {
   id: string;
@@ -161,9 +162,9 @@ const Documents = () => {
 
   const uploadFiles = async (files: File[], docId?: string) => {
     if (files.length === 0) return;
-    
+  
     setIsLoading(true);
-    
+  
     try {
       if (backendStatus === 'offline') {
         await checkBackendStatus();
@@ -171,93 +172,34 @@ const Documents = () => {
           throw new Error("Backend server is not available");
         }
       }
-      
-      if (docId) {
-        const file = files[0];
-        const fileName = file.name;
-        const fileSizeKB = (file.size / 1024).toFixed(2);
-        
+  
+      const newDocuments = [...documents];
+  
+      await Promise.all(files.map(async (file, index) => {
         if (file.type === 'application/pdf') {
-          const formData = new FormData();
-          formData.append('files[]', file);
-          
-          const response = await apiClient.post('/upload-pdfs', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            }
+          const base64Content = await fileToBase64(file);
+          const currDocId = docId || (documents.length + index + 1).toString(); // Ensure unique ID for each file
+  
+          updateDocument(currDocId, 'content', base64Content);
+  
+          const fileSizeKB = (file.size / 1024).toFixed(2);
+  
+          newDocuments.push({
+            id: currDocId,
+            displayName: file.name,
+            content: base64Content,
+            fileSize: `${fileSizeKB} KB`
           });
-          
-          if (response.data.files && response.data.files.length > 0) {
-            updateDocument(docId, 'content', response.data.files[0]);
-            updateDocument(docId, 'displayName', fileName);
-            updateDocument(docId, 'fileSize', `${fileSizeKB} KB`);
-            
-            setDocumentNames(prev => ({
-              ...prev,
-              [docId]: fileName
-            }));
-            
-            showUniqueToast(`${fileName} has been loaded.`, 'success');
-          }
-        } else {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const content = e.target?.result as string;
-            updateDocument(docId, 'content', content);
-            updateDocument(docId, 'displayName', fileName);
-            updateDocument(docId, 'fileSize', `${fileSizeKB} KB`);
-            
-            setDocumentNames(prev => ({
-              ...prev,
-              [docId]: fileName
-            }));
-            
-            showUniqueToast(`${fileName} has been loaded.`, 'success');
-          };
-          reader.readAsText(file);
+  
+          setDocumentNames(prev => ({
+            ...prev,
+            [currDocId]: file.name
+          }));
         }
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      const formData = new FormData();
-      files.forEach(file => {
-        formData.append('files[]', file);
-      });
-      
-      const response = await apiClient.post('/upload-pdfs', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        }
-      });
-
-      if (response.data.files) {
-        showUniqueToast(`Successfully uploaded ${response.data.files.length} files.`, 'success');
-        
-        const newDocuments = [...documents];
-        response.data.files.forEach((fileContent: string, index: number) => {
-          if (index < 10) {  // Limit to 10 documents
-            const newId = (newDocuments.length + 1).toString();
-            const fileName = files[index].name;
-            const fileSizeKB = (files[index].size / 1024).toFixed(2);
-            
-            newDocuments.push({
-              id: newId,
-              displayName: fileName,
-              content: fileContent,
-              fileSize: `${fileSizeKB} KB`
-            });
-            
-            setDocumentNames(prev => ({
-              ...prev,
-              [newId]: fileName
-            }));
-          }
-        });
-        
-        setDocuments(newDocuments);
-      }
+      }));
+  
+      setDocuments(newDocuments);
+      showUniqueToast('Files uploaded successfully.', 'success');
     } catch (error: any) {
       console.error('Error uploading files:', error);
       showUniqueToast('Upload failed. Make sure the backend server is running.');
@@ -265,7 +207,7 @@ const Documents = () => {
       setIsLoading(false);
     }
   };
-
+  
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
