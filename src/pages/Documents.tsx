@@ -456,7 +456,7 @@ const Documents = () => {
 
               <div className="flex justify-end mt-8">
                 <Button 
-                  onClick={() => setActiveTab('evaluation')}
+                  onClick={() => documents.length > 0 ? setActiveTab('evaluation'): showUniqueToast('Please upload at least two documents.')}
                   className="flex items-center gap-2 fixed bottom-8 right-8"
                 >
                   Next: Choose Evaluation Method <ArrowRight className="h-4 w-4" />
