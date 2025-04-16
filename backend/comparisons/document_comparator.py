@@ -40,6 +40,7 @@ class DocumentComparator:
         Returns:
             Dictionary with comparison results
         """
+        # ... keep existing code (function for comparing two documents)
         # Initialize storage for evaluation results
         all_criterion_evaluations = []
         doc_a_weighted_score = 0
@@ -165,9 +166,18 @@ class DocumentComparator:
         Returns:
             Tuple of relevant sections from both documents
         """
-        # ... keep existing code
+        # Make sure we have the document contents
+        if doc1_name not in self.documents or doc2_name not in self.documents:
+            print(f"Warning: Document not found in document dictionary. Doc1: {doc1_name in self.documents}, Doc2: {doc2_name in self.documents}")
+            return "", ""
+            
+        # Get full document content
         doc1_content = self.documents[doc1_name]
         doc2_content = self.documents[doc2_name]
+        
+        # Log a preview of the document content to confirm it's not just the filename
+        print(f"Document content preview for {doc1_name}: {doc1_content[:100]}...")
+        print(f"Document content preview for {doc2_name}: {doc2_content[:100]}...")
         
         # Initialize with empty sections
         doc1_section = ""
@@ -198,13 +208,13 @@ class DocumentComparator:
                         print(f"  Preview: {preview}")
                         break
         
-        # If no relevant sections found or using custom prompt, use truncated content
+        # If no relevant sections found or using custom prompt, use full document content
         if not doc1_section:
             doc1_section = doc1_content
-            print(f"  Document A '{doc1_name}': No specific section found for criterion '{criterion['name']}'.")
+            print(f"  Document A '{doc1_name}': No specific section found for criterion '{criterion['name']}', using full document.")
         if not doc2_section:
             doc2_section = doc2_content
-            print(f"  Document B '{doc2_name}': No specific section found for criterion '{criterion['name']}'.")
+            print(f"  Document B '{doc2_name}': No specific section found for criterion '{criterion['name']}', using full document.")
         
         return doc1_section, doc2_section
     
@@ -224,7 +234,7 @@ class DocumentComparator:
         Returns:
             Tuple of (overall_winner, winner_name, explanation)
         """
-        # ... keep existing code
+        # ... keep existing code (determining the overall winner)
         # Determine overall winner based on accumulated weighted scores
         overall_winner = "A" if doc_a_weighted_score > doc_b_weighted_score else "B"
         if doc_a_weighted_score == doc_b_weighted_score:
