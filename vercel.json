@@ -2,14 +2,14 @@
     "version": 2,
     "builds": [
         {
-            "src": "backend/comparisons/main.py",
+            "src": "backend/comparisons/api.py",
             "use": "@vercel/python"
         }
     ],
     "routes": [
         {
             "src": "/backend/comparisons/(.*)",
-            "dest": "/backend/comparisons/main.py"
+            "dest": "/backend/comparisons/api.py"
         }
     ]
 }
