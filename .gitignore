@@ -45,3 +45,4 @@ develop-eggs/
 *.spec
 .cache/
 .vercel
+.env.example

@@ -49,7 +49,7 @@ def setup_mongodb_connection():
         return None
     
     # Extract database name from connection string for better error messages
-    db_name = connection_string.split("/")[-1] if "/" in connection_string else "rankCentral_DB"
+    db_name = os.getenv("MONGODB_DATABASE_NAME")
     print(f"Attempting to connect to MongoDB database: {db_name}")
     
     client = connect_to_mongodb(connection_string)

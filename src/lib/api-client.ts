@@ -8,7 +8,7 @@ const shownErrors = new Set();
 // Create an axios instance for backend calls with proper error handling
 const apiClient = axios.create({
   // Use environment variable with fallback
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5003',
+  baseURL: import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com/',
   timeout: 300000, // 300 seconds timeout
   headers: {
     'Content-Type': 'application/json',
