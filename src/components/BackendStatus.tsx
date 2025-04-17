@@ -21,7 +21,7 @@ const BackendStatus: React.FC<BackendStatusProps> = ({ onStatusChange, className
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://rank-central.vercel.app/';
 
   // Helper function to show toast without duplicates
   const showUniqueToast = (message: string, options: { id: string, duration?: number }) => {
