@@ -17,7 +17,7 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 # Allow CORS for all routes to ensure frontend can communicate with backend
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": os.getenv("FE_URL")}}, supports_credentials=True)
 
 # Use a temporary directory for PDF storage
 UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'pdf_comparison_uploads')
