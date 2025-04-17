@@ -44,3 +44,4 @@ develop-eggs/
 *.manifest
 *.spec
 .cache/
+.vercel
