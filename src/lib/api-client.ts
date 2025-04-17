@@ -68,12 +68,6 @@ apiClient.interceptors.response.use(
       console.log('Check if your backend server is running at this URL');
       console.log('If using a different port, update VITE_API_URL in your .env file');
       
-      // Toast with unique ID to prevent duplicates
-      showUniqueToast('Backend server not available. Check if it is running.', {
-        id: 'network-error',
-        duration: 5000,
-      });
-      
       return Promise.reject({
         isConnectionError: true,
         message: 'Backend server not available',
