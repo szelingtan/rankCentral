@@ -22,7 +22,7 @@ type PastReportsProps = {
 
 const PastReports = ({ reports }: PastReportsProps) => {
   const { toast: uiToast } = useToast();
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://rank-central.vercel.app/';
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
 
   const downloadReport = async (timestamp?: string) => {
     try {

@@ -23,7 +23,7 @@ const Results = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [backendError, setBackendError] = useState<string | null>(null);
   const { toast: uiToast } = useToast();
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
   
   const checkBackend = async () => {
     try {

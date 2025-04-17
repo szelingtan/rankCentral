@@ -70,7 +70,7 @@ const Documents = () => {
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [documentNames, setDocumentNames] = useState<Record<string, string>>({});
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://rank-central.vercel.app/';
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
   
   useEffect(() => {
     checkBackendStatus();
