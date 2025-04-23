@@ -3,9 +3,8 @@ import os
 import pandas as pd
 from typing import List, Dict
 
-from .report_formatter import ExcelReportFormatter
 from .data_processor import ComparisonDataProcessor
-from .report_config import DEFAULT_REPORT_FILENAME, SHEET_NAMES
+from .report_config import SHEET_NAMES
 
 class ReportGenerator:
     """
@@ -33,7 +32,7 @@ class ReportGenerator:
         win_counts = ComparisonDataProcessor.calculate_win_counts(pdf_list, comparison_results)
         criterion_summary = ComparisonDataProcessor.prepare_criterion_summary(pdf_list, comparison_results)
         
-        # Save report to Excel
+        # Save report to CSV
         return self._create_csv_report(
             report_data, criterion_data, win_counts, criterion_summary
         )
@@ -41,9 +40,7 @@ class ReportGenerator:
     def _create_csv_report(self, report_data, criterion_data, win_counts, criterion_summary):
         """Create the report as separate CSVs within a folder"""
         try:
-            # Create a folder for the CSVs using the report name without extension
-            base_name = os.path.splitext(DEFAULT_REPORT_FILENAME)[0]
-            csv_folder = os.path.join(self.output_dir, f"{base_name}_csv_reports")
+            csv_folder = os.path.join(self.output_dir, f"csv_reports")
             
             # Create the folder if it doesn't exist
             if not os.path.exists(csv_folder):
@@ -54,14 +51,14 @@ class ReportGenerator:
             # Main comparisons sheet
             if report_data:
                 df_main = pd.DataFrame(report_data)
-                main_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['overall']}.csv")
+                main_file = os.path.join(csv_folder, f"{SHEET_NAMES['overall']}.csv")
                 df_main.to_csv(main_file, index=False)
                 csv_files.append(main_file)
             
             # Criterion details sheet
             if criterion_data:
                 df_criteria = pd.DataFrame(criterion_data)
-                criteria_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['criteria']}.csv")
+                criteria_file = os.path.join(csv_folder, f"{SHEET_NAMES['criteria']}.csv")
                 df_criteria.to_csv(criteria_file, index=False)
                 csv_files.append(criteria_file)
             
@@ -74,7 +71,7 @@ class ReportGenerator:
                 
                 df_summary = pd.DataFrame(summary_data)
                 df_summary = df_summary.sort_values(by='Win Count', ascending=False)
-                wins_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['wins']}.csv")
+                wins_file = os.path.join(csv_folder, f"{SHEET_NAMES['wins']}.csv")
                 df_summary.to_csv(wins_file, index=False)
                 csv_files.append(wins_file)
             
@@ -82,7 +79,7 @@ class ReportGenerator:
             if criterion_summary:
                 df_criterion = pd.DataFrame(criterion_summary)
                 df_criterion = df_criterion.sort_values(by='Win Count', ascending=False)
-                scores_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['scores']}.csv")
+                scores_file = os.path.join(csv_folder, f"{SHEET_NAMES['scores']}.csv")
                 df_criterion.to_csv(scores_file, index=False)
                 csv_files.append(scores_file)
             

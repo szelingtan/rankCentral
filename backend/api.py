@@ -10,6 +10,9 @@ from utils.db_connection import setup_mongodb_connection
 import tempfile
 from datetime import datetime
 import json
+from zoneinfo import ZoneInfo
+import io
+import zipfile
 
 # Load environment variables
 load_dotenv()
@@ -193,22 +196,23 @@ def compare_documents():
             if db is not None:
                 try:
                     # Get all CSV files in the report folder
-                    csv_files = {}
+                    csv_files = []
                     if os.path.exists(report_folder_path):
                         for filename in os.listdir(report_folder_path):
                             if filename.endswith('.csv'):
+                                csv_file = {}
                                 file_path = os.path.join(report_folder_path, filename)
                                 # Read file content
                                 with open(file_path, 'r') as file:
                                     csv_content = file.read()
-                                csv_files[filename] = csv_content
+                                csv_file[filename] = csv_content
+                                csv_files.append(csv_file)
                                                     
                     # Store complete document names to ensure they display properly
                     report_data = {
                         "timestamp": datetime.now().isoformat(),
                         "documents": pdf_list,  # This contains the actual document names
                         "top_ranked": results[0] if results else None,
-                        "report_path": report_folder_path,
                         "csv_files": csv_files,  # Store the CSV contents directly in MongoDB
                         "criteria_count": len(criteria),
                         "evaluation_method": evaluation_method,
@@ -267,28 +271,30 @@ def download_report():
         reports_collection = db["reports"]
         latest_report = reports_collection.find_one({}, sort=[("timestamp", -1)])
         
-        if not latest_report or "report_path" not in latest_report:
-            # Fall back to the default path if not found in database
-            report_path = os.path.join(app.config['UPLOAD_FOLDER'], 'document_comparison_report.xlsx')
-        else:
-            report_path = latest_report["report_path"]
+        if not latest_report or "csv_files" not in latest_report:
+            return jsonify({"error": "Report not found"}), 404
         
-        if not os.path.exists(report_path):
-            return jsonify({
-                "error": f"Report file not found at path: {report_path}", 
-                "details": "The report may have been deleted or moved."
-            }), 404
-        
-        # Add debugging information to logs
-        print(f"Attempting to send file from: {report_path}")
-        
-        # Set appropriate MIME type for Excel files
+        zip_buffer = io.BytesIO()
+
+        file_data = latest_report["csv_files"]
+
+        # Create a zip file in memory
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file_info in file_data:
+                filename = file_info["filename"]
+                content = file_info["content"]
+                zip_file.writestr(filename, content)
+
+        # Move to the beginning of the BytesIO buffer
+        zip_buffer.seek(0)
+
         return send_file(
-            report_path, 
+            zip_buffer,
             as_attachment=True,
-            download_name="document_comparison_report.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            download_name="report_bundle.zip",
+            mimetype="application/zip"
         )
+
     except Exception as e:
         print(f"Error in download_report: {str(e)}")
         return jsonify({"error": f"Error downloading report: {str(e)}"}), 500
@@ -311,6 +317,7 @@ def get_report_history():
             "top_ranked": 1,
             "report_path": 1,
             "criteria_count": 1,
+            "csv_files":1,
             "evaluation_method": 1,
             "custom_prompt": 1
         }).sort("timestamp", -1).limit(3))
@@ -318,7 +325,10 @@ def get_report_history():
         # Convert ObjectId to string for JSON serialization if needed
         for report in reports:
             # Convert datetime to ISO format string if needed
-            if isinstance(report.get("timestamp"), datetime):
+            timestamp = report.get("timestamp")
+            if isinstance(timestamp, datetime):
+                # Convert to Asia/Singapore timezone
+                timestamp = timestamp.astimezone(ZoneInfo("Asia/Singapore"))
                 report["timestamp"] = report["timestamp"].isoformat()
         
         return jsonify(reports)
@@ -338,21 +348,36 @@ def download_specific_report(timestamp):
         # Find the report with the matching timestamp
         report = reports_collection.find_one({"timestamp": timestamp})
         
-        if not report or "report_path" not in report:
+        if not report or "csv_files" not in report:
             return jsonify({"error": "Report not found"}), 404
         
-        report_path = report["report_path"]
-        
-        if not os.path.exists(report_path):
-            return jsonify({"error": "Report file not found"}), 404
-        
-        # Set appropriate MIME type for Excel files
+        zip_buffer = io.BytesIO()
+
+        # Convert timestamp string to datetime object (handling timezone)
+        parsed_timestamp = datetime.fromisoformat(timestamp)
+
+        # Convert to Asia/Singapore timezone
+        parsed_timestamp = parsed_timestamp.astimezone(ZoneInfo("Asia/Singapore"))
+
+        # Format: YYYYMMDD_HHMMSS (e.g., 20250422_100000)
+        formatted_timestamp = parsed_timestamp.strftime("%d%b%Y-%H%M%S")
+                
+        # Create a zip file in memory
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file_dict in report["csv_files"]:
+                for filename, content in file_dict.items():
+                    zip_file.writestr(filename, content)
+
+        # Move to the beginning of the BytesIO buffer
+        zip_buffer.seek(0)
+
         return send_file(
-            report_path, 
+            zip_buffer,
             as_attachment=True,
-            download_name="document_comparison_report.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            download_name=f"document_comparison_report_{formatted_timestamp}.zip",
+            mimetype="application/zip"
         )
+    
     except Exception as e:
         print(f"Error in download_specific_report: {str(e)}")
         return jsonify({"error": f"Error downloading report: {str(e)}"}), 500

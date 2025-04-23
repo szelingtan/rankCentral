@@ -40,9 +40,6 @@ DEFAULT_COLUMN_WIDTH = {
     "analysis": 60
 }
 
-# Report file name
-DEFAULT_REPORT_FILENAME = "document_comparison_report.xlsx"
-
 # Score level descriptions
 DEFAULT_SCORE_LEVEL_DESCRIPTIONS = {
     1: 'Poor - Does not meet the criterion requirements',
