@@ -170,68 +170,89 @@ def compare_documents():
                     # Use as plain text
                     pdf_contents[doc_name] = doc_content
         
-        # Get criteria
-        criteria = criteria_manager.criteria
-        
-        # Initialize comparison engine
-        comparison_engine = ComparisonEngine(pdf_contents, criteria, api_key, pdf_processor, 
-                                            use_custom_prompt=(evaluation_method == 'prompt'))
-        
-        # Initialize report generator
-        report_generator = ReportGenerator(app.config['UPLOAD_FOLDER'])
-        
-        # Prepare for comparison
-        pdf_list = list(pdf_contents.keys())
-        
-        # Run comparisons with merge sort
-        results = comparison_engine.compare_with_mergesort(pdf_list)
-        
-        # Generate report
-        report_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results)
-        
-        # Store report metadata in MongoDB
-        if db is not None:
-            try:
-                # Store complete document names to ensure they display properly
-                report_data = {
-                    "timestamp": datetime.now().isoformat(),
-                    "documents": pdf_list,  # This contains the actual document names
-                    "top_ranked": results[0] if results else None,
-                    "report_path": report_path,
-                    "criteria_count": len(criteria),
-                    "evaluation_method": evaluation_method,
-                    "custom_prompt": custom_prompt if evaluation_method == 'prompt' else ""
-                }
-                
-                # Get reports collection
-                reports_collection = db["reports"]
-                
-                # Insert new report metadata
-                reports_collection.insert_one(report_data)
-                
-                # Limit to 3 most recent reports (remove older ones)
-                # Find all reports sorted by timestamp
-                all_reports = list(reports_collection.find().sort("timestamp", -1))
-                
-                # Delete any reports beyond the most recent 3
-                if len(all_reports) > 3:
-                    # Get IDs of reports to delete
-                    reports_to_delete = all_reports[3:]
-                    report_ids = [report["_id"] for report in reports_to_delete]
+            # Get criteria
+            criteria = criteria_manager.criteria
+            
+            # Initialize comparison engine
+            comparison_engine = ComparisonEngine(pdf_contents, criteria, api_key, pdf_processor, 
+                                                use_custom_prompt=(evaluation_method == 'prompt'))
+
+            # Initialize report generator
+            report_generator = ReportGenerator(app.config['UPLOAD_FOLDER'])
+
+            # Prepare for comparison
+            pdf_list = list(pdf_contents.keys())
+
+            # Run comparisons with merge sort
+            results = comparison_engine.compare_with_mergesort(pdf_list)
+
+            # Generate report - this now returns a folder path
+            report_folder_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results)
+
+            # Store report metadata and CSV contents in MongoDB
+            if db is not None:
+                try:
+                    # Get all CSV files in the report folder
+                    csv_files = {}
+                    if os.path.exists(report_folder_path):
+                        for filename in os.listdir(report_folder_path):
+                            if filename.endswith('.csv'):
+                                file_path = os.path.join(report_folder_path, filename)
+                                # Read file content
+                                with open(file_path, 'r') as file:
+                                    csv_content = file.read()
+                                csv_files[filename] = csv_content
+                                                    
+                    # Store complete document names to ensure they display properly
+                    report_data = {
+                        "timestamp": datetime.now().isoformat(),
+                        "documents": pdf_list,  # This contains the actual document names
+                        "top_ranked": results[0] if results else None,
+                        "report_path": report_folder_path,
+                        "csv_files": csv_files,  # Store the CSV contents directly in MongoDB
+                        "criteria_count": len(criteria),
+                        "evaluation_method": evaluation_method,
+                        "custom_prompt": custom_prompt if evaluation_method == 'prompt' else ""
+                    }
                     
-                    # Delete older reports
-                    reports_collection.delete_many({"_id": {"$in": report_ids}})
-            except Exception as e:
-                print(f"Error storing report history: {str(e)}")
-                # Continue even if history storage fails
-        
-        return jsonify({
-            "message": "Comparison completed successfully",
-            "ranked_documents": results,
-            "comparison_details": comparison_engine.comparison_results,
-            "report_path": report_path
-        })
-    
+                    # Get reports collection
+                    reports_collection = db["reports"]
+                    
+                    # Insert new report metadata
+                    reports_collection.insert_one(report_data)
+                    
+                    # Limit to 3 most recent reports (remove older ones)
+                    # Find all reports sorted by timestamp
+                    all_reports = list(reports_collection.find().sort("timestamp", -1))
+                    
+                    # Delete any reports beyond the most recent 3
+                    if len(all_reports) > 3:
+                        # Get IDs of reports to delete
+                        reports_to_delete = all_reports[3:]
+                        report_ids = [report["_id"] for report in reports_to_delete]
+                        
+                        # Delete older reports
+                        reports_collection.delete_many({"_id": {"$in": report_ids}})
+                        
+                        # Clean up the local folder if needed
+                        for report in reports_to_delete:
+                            if os.path.exists(report["report_path"]):
+                                try:
+                                    import shutil
+                                    shutil.rmtree(report["report_path"])
+                                except Exception as folder_delete_err:
+                                    print(f"Error deleting old report folder: {str(folder_delete_err)}")
+                                    
+                except Exception as e:
+                    print(f"Error storing report history: {str(e)}")
+                    
+                return jsonify({
+                    "message": "Comparison completed successfully",
+                    "ranked_documents": results,
+                    "comparison_details": comparison_engine.comparison_results,
+                    "report_path": report_folder_path
+                })
+                
     except Exception as e:
         return jsonify({"error": f"Error during comparison: {str(e)}"}), 500
 

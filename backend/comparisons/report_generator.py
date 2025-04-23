@@ -34,50 +34,63 @@ class ReportGenerator:
         criterion_summary = ComparisonDataProcessor.prepare_criterion_summary(pdf_list, comparison_results)
         
         # Save report to Excel
-        return self._create_excel_report(
+        return self._create_csv_report(
             report_data, criterion_data, win_counts, criterion_summary
         )
     
-    def _create_excel_report(self, report_data, criterion_data, win_counts, criterion_summary):
-        """Create the Excel report with all data sheets"""
+    def _create_csv_report(self, report_data, criterion_data, win_counts, criterion_summary):
+        """Create the report as separate CSVs within a folder"""
         try:
-            # Create file path
-            report_path = os.path.join(self.output_dir, DEFAULT_REPORT_FILENAME)
+            # Create a folder for the CSVs using the report name without extension
+            base_name = os.path.splitext(DEFAULT_REPORT_FILENAME)[0]
+            csv_folder = os.path.join(self.output_dir, f"{base_name}_csv_reports")
             
-            with pd.ExcelWriter(report_path, engine='openpyxl') as writer:
-                # Main comparisons sheet
-                if report_data:
-                    df_main = pd.DataFrame(report_data)
-                    df_main.to_excel(writer, sheet_name=SHEET_NAMES["overall"], index=False)
-                                
-                # Criterion details sheet
-                if criterion_data:
-                    df_criteria = pd.DataFrame(criterion_data)
-                    df_criteria.to_excel(writer, sheet_name=SHEET_NAMES["criteria"], index=False)
+            # Create the folder if it doesn't exist
+            if not os.path.exists(csv_folder):
+                os.makedirs(csv_folder)
+            
+            csv_files = []
+            
+            # Main comparisons sheet
+            if report_data:
+                df_main = pd.DataFrame(report_data)
+                main_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['overall']}.csv")
+                df_main.to_csv(main_file, index=False)
+                csv_files.append(main_file)
+            
+            # Criterion details sheet
+            if criterion_data:
+                df_criteria = pd.DataFrame(criterion_data)
+                criteria_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['criteria']}.csv")
+                df_criteria.to_csv(criteria_file, index=False)
+                csv_files.append(criteria_file)
+            
+            # Document win count summary
+            if win_counts:
+                summary_data = [{
+                    'Document': doc,
+                    'Win Count': count
+                } for doc, count in win_counts.items()]
                 
-                # Document win count summary
-                if win_counts:
-                    summary_data = [{
-                        'Document': doc,
-                        'Win Count': count
-                    } for doc, count in win_counts.items()]
-                    
-                    df_summary = pd.DataFrame(summary_data)
-                    df_summary = df_summary.sort_values(by='Win Count', ascending=False)
-                    df_summary.to_excel(writer, sheet_name=SHEET_NAMES["wins"], index=False)
-                
-                # Criterion-specific scores
-                if criterion_summary:
-                    df_criterion = pd.DataFrame(criterion_summary)
-                    df_criterion = df_criterion.sort_values(by='Win Count', ascending=False)
-                    df_criterion.to_excel(writer, sheet_name=SHEET_NAMES["scores"], index=False)
+                df_summary = pd.DataFrame(summary_data)
+                df_summary = df_summary.sort_values(by='Win Count', ascending=False)
+                wins_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['wins']}.csv")
+                df_summary.to_csv(wins_file, index=False)
+                csv_files.append(wins_file)
             
-            # Apply formatting to the Excel file
-            ExcelReportFormatter.apply_formatting(report_path)
+            # Criterion-specific scores
+            if criterion_summary:
+                df_criterion = pd.DataFrame(criterion_summary)
+                df_criterion = df_criterion.sort_values(by='Win Count', ascending=False)
+                scores_file = os.path.join(csv_folder, f"{base_name}_{SHEET_NAMES['scores']}.csv")
+                df_criterion.to_csv(scores_file, index=False)
+                csv_files.append(scores_file)
             
-            print(f"\nDetailed comparison report saved to: {report_path}")
-            return report_path
+            print(f"\nDetailed comparison reports saved to database")
+            print(f"Created {len(csv_files)} CSV files")
+            
+            return csv_folder
             
         except Exception as e:
-            print(f"Error generating report: {e}")
+            print(f"Error generating CSV reports: {e}")
             return ""

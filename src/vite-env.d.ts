@@ -3,7 +3,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_MONGODB_URI: string;
-  // add more environment variables as needed
+  readonly VITE_API_URL: string;
 }
 
 interface ImportMeta {
