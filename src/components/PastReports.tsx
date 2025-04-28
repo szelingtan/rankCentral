@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
 type EvaluationReport = {
   timestamp: string;
@@ -15,6 +18,9 @@ type EvaluationReport = {
   evaluation_method: string;
   custom_prompt?: string;
 };
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 type PastReportsProps = {
   reports: EvaluationReport[];
@@ -74,7 +80,7 @@ const PastReports = ({ reports }: PastReportsProps) => {
                   <div>
                     <h3 className="font-medium">Report {index + 1}</h3>
                     <p className="text-sm text-gray-600">
-                      Created: {new Date(report.timestamp).toLocaleString('en-SG', { timeZone: 'Asia/Singapore' })}
+                      Created: {dayjs.utc(report.timestamp).tz('Asia/Singapore').format('DD MMM YYYY, hh:mm A')}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
                       Documents: {Array.isArray(report.documents) && report.documents.length > 0 
