@@ -74,7 +74,7 @@ const PastReports = ({ reports }: PastReportsProps) => {
                   <div>
                     <h3 className="font-medium">Report {index + 1}</h3>
                     <p className="text-sm text-gray-600">
-                      Created: {new Date(report.timestamp).toLocaleString()}
+                      Created: {new Date(report.timestamp).toLocaleString('en-SG', { timeZone: 'Asia/Singapore' })}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
                       Documents: {Array.isArray(report.documents) && report.documents.length > 0 
