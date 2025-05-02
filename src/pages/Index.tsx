@@ -44,6 +44,7 @@ const Index = () => {
               variant="outline" 
               size="lg"
               className="border-brand-primary text-brand-primary hover:bg-brand-light px-8 py-6 text-lg"
+              onClick={() => navigate('/learn-more')}
             >
               Learn More
             </Button>
@@ -97,25 +98,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <RankCentralLogo className="text-white" />
-            <p className="text-gray-400 mt-2">© 2023 rankCentral. All rights reserved.</p>
-          </div>
-          <div className="flex gap-8">
-            <div>
-              <h4 className="font-semibold mb-2">Product</h4>
-              <ul className="text-gray-400 space-y-1">
-                <li><a href="#" className="hover:text-white">Features</a></li>
-                <li><a href="#" className="hover:text-white">Pricing</a></li>
-                <li><a href="#" className="hover:text-white">FAQ</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Company</h4>
-              <ul className="text-gray-400 space-y-1">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
-              </ul>
-            </div>
+            <p className="text-gray-400 mt-2">© 2025 rankCentral. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -12,6 +12,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
+import LearnMore from "./pages/LearnMore";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/documents" element={<Documents />} />
           <Route path="/results" element={<Results />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/learn-more" element={<LearnMore />} />
           
           {/* Catch-all Route */}
           <Route path="*" element={<NotFound />} />
