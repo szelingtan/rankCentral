@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FileText, Trash2, ArrowRight, Upload } from 'lucide-react';
+import { FileText, Trash2, ArrowRight, Upload, Folder, FolderPlus } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -10,16 +9,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
 import CriteriaForm from '@/components/CriteriaForm';
-import { request } from 'http';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type Document = {
   id: string;
   content: string;
   displayName?: string;
   fileSize?: string;
+  folderId?: string;
 };
 
 type Criterion = {
@@ -69,6 +70,15 @@ const Documents = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [documentNames, setDocumentNames] = useState<Record<string, string>>({});
+  
+  // New state for folders
+  const [folders, setFolders] = useState<{id: string, name: string}[]>([
+    {id: 'default', name: 'Main Folder'}
+  ]);
+  const [selectedFolder, setSelectedFolder] = useState<string>('default');
+  const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
   
@@ -130,6 +140,21 @@ const Documents = () => {
     }
   };
 
+  const handleNewFolder = () => {
+    if (!newFolderName.trim()) {
+      showUniqueToast("Please enter a folder name.");
+      return;
+    }
+    
+    const newFolderId = `folder-${Date.now()}`;
+    setFolders([...folders, {id: newFolderId, name: newFolderName}]);
+    setSelectedFolder(newFolderId);
+    setNewFolderName('');
+    setIsNewFolderDialogOpen(false);
+    
+    showUniqueToast(`Folder "${newFolderName}" created successfully.`, 'success');
+  };
+
   const removeDocument = (id: string) => {
     if (documents.length <= 2) {
       showUniqueToast('Cannot remove. You need at least two documents for comparison.');
@@ -188,7 +213,8 @@ const Documents = () => {
             id: currDocId,
             displayName: file.name,
             content: base64Content,
-            fileSize: `${fileSizeKB} KB`
+            fileSize: `${fileSizeKB} KB`,
+            folderId: selectedFolder
           });
   
           setDocumentNames(prev => ({
@@ -312,8 +338,75 @@ const Documents = () => {
           <TabsContent value="documents" className="mt-0">
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-700">Upload Documents</h2>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-semibold text-gray-700">Upload Documents</h2>
+                  
+                  {folders.length > 1 && (
+                    <div className="flex items-center">
+                      <Label htmlFor="folder-select" className="mr-2 text-gray-600">Folder:</Label>
+                      <select 
+                        id="folder-select"
+                        value={selectedFolder}
+                        onChange={(e) => setSelectedFolder(e.target.value)}
+                        className="border rounded px-2 py-1 text-sm bg-white"
+                      >
+                        {folders.map(folder => (
+                          <option key={folder.id} value={folder.id}>{folder.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex gap-2">
+                  <Dialog open={isNewFolderDialogOpen} onOpenChange={setIsNewFolderDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <FolderPlus className="h-4 w-4" />
+                        New Folder
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>New Folder</DialogTitle>
+                        <DialogDescription>
+                          Create a new folder to organize your documents.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="folder-name">Folder Name</Label>
+                          <Input
+                            id="folder-name"
+                            prefixIcon={<Folder className="h-4 w-4" />}
+                            placeholder="Enter folder name"
+                            value={newFolderName}
+                            onChange={(e) => setNewFolderName(e.target.value)}
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsNewFolderDialogOpen(false);
+                            setNewFolderName('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleNewFolder}
+                          className="bg-brand-primary hover:bg-brand-dark"
+                          disabled={!newFolderName.trim()}
+                        >
+                          Create Folder
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                
                   <div className="relative">
                     <input
                       type="file"
@@ -339,12 +432,20 @@ const Documents = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {documents.map((doc) => (
+                  {documents
+                    .filter(doc => !doc.folderId || doc.folderId === selectedFolder)
+                    .map((doc) => (
                     <Card key={doc.id} className="shadow-sm">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-center">
-                          <div className="truncate">
+                          <div className="truncate flex items-center">
+                            <FileText className="h-4 w-4 text-brand-primary mr-2" />
                             {doc.displayName ? doc.displayName : `Document ${doc.id}`}
+                            {doc.folderId && doc.folderId !== 'default' && (
+                              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                {folders.find(f => f.id === doc.folderId)?.name || 'Folder'}
+                              </span>
+                            )}
                           </div>
                           <Button
                             variant="ghost"
