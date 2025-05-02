@@ -135,15 +135,18 @@ const CriteriaForm = ({
 
   return (
     <div>
-      <div className="flex items-center space-x-2 mb-6">
-        <Label htmlFor="detail-level">Detail Level:</Label>
-        <Tabs value={detailLevel} onValueChange={(value: 'basic' | 'advanced') => setDetailLevel(value)} className="ml-2">
-          <TabsList>
-            <TabsTrigger value="basic">Basic</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+      {/* Only show detail level tabs when using custom criteria */}
+      {useCustomCriteria && (
+        <div className="flex items-center space-x-2 mb-6">
+          <Label htmlFor="detail-level">Detail Level:</Label>
+          <Tabs value={detailLevel} onValueChange={(value: 'basic' | 'advanced') => setDetailLevel(value)} className="ml-2">
+            <TabsList>
+              <TabsTrigger value="basic">Basic</TabsTrigger>
+              <TabsTrigger value="advanced">Advanced</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
 
       {useCustomCriteria ? (
         <div className="space-y-6">
