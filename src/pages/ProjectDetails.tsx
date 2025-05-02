@@ -16,7 +16,7 @@ import {
   uploadDocument, 
   createEvaluation 
 } from '../lib/api';
-import { FileText, Upload, Download, PlusCircle, File, Clock, Folder, FolderPlus } from 'lucide-react';
+import { FileText, Upload, Download, PlusCircle, File, Clock } from 'lucide-react';
 import type { IProject } from '../models/Project';
 import type { IDocument } from '../models/Document';
 import type { IEvaluation } from '../models/Evaluation';
@@ -36,12 +36,6 @@ const ProjectDetails = () => {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [documentName, setDocumentName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [folders, setFolders] = useState<{id: string, name: string}[]>([
-    {id: 'default', name: 'Main Folder'}
-  ]);
-  const [selectedFolder, setSelectedFolder] = useState<string>('default');
-  const [isNewFolderDialogOpen, setIsNewFolderDialogOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
   
   const fetchProjectData = async () => {
     if (!user || !id) return;
@@ -83,28 +77,6 @@ const ProjectDetails = () => {
       }
     }
   };
-
-  const handleNewFolder = () => {
-    if (!newFolderName.trim()) {
-      toast({
-        title: "Folder name required",
-        description: "Please enter a name for your folder.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const newFolderId = `folder-${Date.now()}`;
-    setFolders([...folders, {id: newFolderId, name: newFolderName}]);
-    setSelectedFolder(newFolderId);
-    setNewFolderName('');
-    setIsNewFolderDialogOpen(false);
-    
-    toast({
-      title: "Folder created",
-      description: `"${newFolderName}" folder has been created.`,
-    });
-  };
   
   const handleUploadDocument = async () => {
     if (!user || !id || !selectedFile) return;
@@ -123,8 +95,7 @@ const ProjectDetails = () => {
     const fakeFileUrl = `https://storage.example.com/${Date.now()}-${selectedFile.name}`;
     
     try {
-      // Include the folderId directly in the uploadDocument call parameters
-      const newDocument = await uploadDocument(id, user.id, documentName, fakeFileUrl, selectedFolder);
+      const newDocument = await uploadDocument(id, user.id, documentName, fakeFileUrl);
       
       setDocuments([newDocument, ...documents]);
       setDocumentName('');
@@ -299,115 +270,50 @@ const ProjectDetails = () => {
               </Card>
             ) : (
               <>
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center">
-                    <Label htmlFor="folder-select" className="mr-2">Folder:</Label>
-                    <select 
-                      id="folder-select"
-                      value={selectedFolder}
-                      onChange={(e) => setSelectedFolder(e.target.value)}
-                      className="border rounded px-2 py-1"
-                    >
-                      {folders.map(folder => (
-                        <option key={folder.id} value={folder.id}>{folder.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Dialog open={isNewFolderDialogOpen} onOpenChange={setIsNewFolderDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" className="flex items-center gap-2">
-                          <FolderPlus className="h-4 w-4" />
-                          New Folder
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>New Folder</DialogTitle>
-                          <DialogDescription>
-                            Create a new folder to organize your documents.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="folder-name">Folder Name</Label>
-                            <Input
-                              id="folder-name"
-                              prefixIcon={<Folder className="h-4 w-4" />}
-                              placeholder="Enter folder name"
-                              value={newFolderName}
-                              onChange={(e) => setNewFolderName(e.target.value)}
-                              autoFocus
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => {
-                              setIsNewFolderDialogOpen(false);
-                              setNewFolderName('');
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                          <Button 
-                            onClick={handleNewFolder}
-                            className="bg-brand-primary hover:bg-brand-dark"
-                            disabled={!newFolderName.trim()}
-                          >
-                            Create Folder
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    
-                    <Button 
-                      onClick={() => setIsUploadDialogOpen(true)}
-                      className="bg-brand-primary hover:bg-brand-dark flex items-center gap-2"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload Document
-                    </Button>
-                  </div>
+                <div className="flex justify-end mb-6">
+                  <Button 
+                    onClick={() => setIsUploadDialogOpen(true)}
+                    className="bg-brand-primary hover:bg-brand-dark flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload Document
+                  </Button>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {documents
-                    .filter(document => !document.folderId || document.folderId === selectedFolder)
-                    .map((document) => (
-                      <Card key={document._id.toString()} className="shadow-sm hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="flex items-start gap-2 truncate">
-                            <FileText className="h-5 w-5 text-brand-primary shrink-0" />
-                            <span className="truncate">{document.name}</span>
-                          </CardTitle>
-                          <CardDescription className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              Uploaded on {formatDate(document.createdAt)}
-                            </span>
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex justify-end">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="flex items-center gap-1"
-                            onClick={() => {
-                              // In a real app, this would download the file
-                              toast({
-                                title: "Download started",
-                                description: `Downloading ${document.name}.pdf`,
-                              });
-                            }}
-                          >
-                            <Download className="h-4 w-4" />
-                            Download
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  {documents.map((document) => (
+                    <Card key={document._id.toString()} className="shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="flex items-start gap-2 truncate">
+                          <FileText className="h-5 w-5 text-brand-primary shrink-0" />
+                          <span className="truncate">{document.name}</span>
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            Uploaded on {formatDate(document.createdAt)}
+                          </span>
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex justify-end">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => {
+                            // In a real app, this would download the file
+                            toast({
+                              title: "Download started",
+                              description: `Downloading ${document.name}.pdf`,
+                            });
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
                   <Card 
                     className="shadow-sm border-dashed border-2 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
                     onClick={() => setIsUploadDialogOpen(true)}
