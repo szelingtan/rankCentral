@@ -29,7 +29,7 @@ const LearnMore = () => {
                 <li>Upload multiple documents for comprehensive comparison</li>
               </ul>
               <p className="mt-4 text-gray-600">
-                The system supports various document formats and automatically processes them for comparison.
+                Please kindly note that only PDF documents are supported.
               </p>
             </CardContent>
           </Card>
