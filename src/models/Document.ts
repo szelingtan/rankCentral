@@ -7,6 +7,7 @@ export interface IDocument extends Document {
   fileType: string;
   project: mongoose.Types.ObjectId;
   owner: mongoose.Types.ObjectId;
+  folderId?: string; // Adding folderId as an optional property
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,10 @@ const DocumentSchema = new Schema<IDocument>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  folderId: {
+    type: String,
+    required: false,
   },
 }, {
   timestamps: true,
