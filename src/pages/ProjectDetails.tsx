@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -123,11 +124,11 @@ const ProjectDetails = () => {
     const fakeFileUrl = `https://storage.example.com/${Date.now()}-${selectedFile.name}`;
     
     try {
-      // In a real implementation, we would include the folderId
+      // Upload the document without folder information first
       const newDocument = await uploadDocument(id, user.id, documentName, fakeFileUrl);
       
-      // Add folder information to document
-      const documentWithFolder = {
+      // Create a new document object that includes the folder ID
+      const documentWithFolder: IDocument = {
         ...newDocument,
         folderId: selectedFolder
       };
