@@ -17,7 +17,7 @@ const LearnMore = () => {
                 <FileText className="h-5 w-5 text-brand-primary" />
                 Step 1: Upload Documents
               </CardTitle>
-              <CardDescription>Getting your documents into rankCentral</CardDescription>
+              <CardDescription>Uploading your documents into rankCentral</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
