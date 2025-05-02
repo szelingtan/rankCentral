@@ -15,13 +15,14 @@ class ReportGenerator:
     def __init__(self, output_dir: str):
         self.output_dir = output_dir
     
-    def generate_report(self, pdf_list: List[str], comparison_results: List[Dict]) -> str:
+    def generate_report(self, pdf_list: List[str], comparison_results: List[Dict], folder_name: str = "csv_reports") -> str:
         """
         Generate a detailed evaluation report of all comparisons with full reasoning.
         
         Args:
             pdf_list: List of all PDFs that were compared
             comparison_results: Results of all pairwise comparisons
+            folder_name: Custom name for the CSV reports folder
             
         Returns:
             Path to the generated report
@@ -34,13 +35,13 @@ class ReportGenerator:
         
         # Save report to CSV
         return self._create_csv_report(
-            report_data, criterion_data, win_counts, criterion_summary
+            report_data, criterion_data, win_counts, criterion_summary, folder_name
         )
     
-    def _create_csv_report(self, report_data, criterion_data, win_counts, criterion_summary):
+    def _create_csv_report(self, report_data, criterion_data, win_counts, criterion_summary, folder_name="csv_reports"):
         """Create the report as separate CSVs within a folder"""
         try:
-            csv_folder = os.path.join(self.output_dir, f"csv_reports")
+            csv_folder = os.path.join(self.output_dir, folder_name)
             
             # Create the folder if it doesn't exist
             if not os.path.exists(csv_folder):
@@ -84,7 +85,7 @@ class ReportGenerator:
                 csv_files.append(scores_file)
             
             print(f"\nDetailed comparison reports saved to database")
-            print(f"Created {len(csv_files)} CSV files")
+            print(f"Created {len(csv_files)} CSV files in folder '{folder_name}'")
             
             return csv_folder
             
