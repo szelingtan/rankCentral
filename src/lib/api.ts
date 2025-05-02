@@ -151,7 +151,8 @@ export const uploadDocument = async (
   projectId: string, 
   userId: string, 
   name: string, 
-  fileUrl: string
+  fileUrl: string,
+  folderId?: string
 ) => {
   await connectDB();
   
@@ -169,6 +170,7 @@ export const uploadDocument = async (
       fileType: 'pdf',
       project: projectId,
       owner: userId,
+      folderId: folderId || undefined,
     });
     
     await document.save();
