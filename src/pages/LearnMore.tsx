@@ -47,10 +47,9 @@ const LearnMore = () => {
                 Define the criteria by which you want your documents to be evaluated:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                <li>Create custom ranking criteria specific to your needs</li>
-                <li>Assign weightage to different criteria based on importance</li>
-                <li>Use our pre-defined templates for common document types</li>
-                <li>Create a custom prompt for AI evaluation if none of the criteria fit your needs</li>
+                <li>Use our pre-defined criteria for common document types</li>
+                <li>Create custom ranking criteria and weightage specific to your needs</li>
+                <li>Create a custom prompt for AI evaluation</li>
               </ul>
               <p className="mt-4 text-gray-600">
                 Well-defined criteria lead to more accurate and useful comparison results.
@@ -77,7 +76,7 @@ const LearnMore = () => {
                 <li>Downloadable reports for sharing or archiving</li>
               </ul>
               <p className="mt-4 text-gray-600">
-                The Results page provides visualizations and explanations to help you understand why certain documents ranked higher than others.
+                The Results page contains folders with CSV files which gives insights into the evaluations.
               </p>
             </CardContent>
           </Card>
@@ -117,7 +116,7 @@ const LearnMore = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                If you have any questions or need further assistance, please don't hesitate to contact our support team. We're here to help you get the most out of rankCentral.
+                If you have any questions or need further assistance, please feel free to contact Sze Ling and Callyanne.
               </p>
             </CardContent>
           </Card>
