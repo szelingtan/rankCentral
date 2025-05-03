@@ -8,7 +8,7 @@ const LearnMore = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-brand-primary">How to Use rankCentral</h1>
+        <h1 className="text-3xl font-bold mb-8 text-brand-primary">rankCentral Guide</h1>
         
         <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
           <Card>
