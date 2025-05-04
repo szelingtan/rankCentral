@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
 import CriteriaForm from '@/components/CriteriaForm';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import ReportNameInput from '@/components/ReportNameInput';
 
 type Document = {
   id: string;
@@ -69,6 +70,7 @@ const Documents = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [documentNames, setDocumentNames] = useState<Record<string, string>>({});
+  const [reportName, setReportName] = useState('');
   
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
@@ -271,7 +273,8 @@ const Documents = () => {
           ? (useCustomCriteria ? criteria : defaultCriteria)
           : [],
         custom_prompt: evaluationMethod === 'prompt' ? customPrompt : '',
-        evaluation_method: evaluationMethod
+        evaluation_method: evaluationMethod,
+        report_name: reportName || `Report ${new Date().toLocaleTimeString()}`  // Use provided name or generate default
       };
 
       console.log('Sending comparison request:', {
@@ -281,6 +284,12 @@ const Documents = () => {
           content: d.content.length > 50 ? `${d.content.substring(0, 50)}... (${d.content.length} chars)` : d.content
         }))
       });
+      
+      // Include the OpenAI API key from localStorage if available
+      const apiKey = localStorage.getItem('openai_api_key');
+      if (apiKey) {
+        requestData['api_key'] = apiKey;
+      }
       
       const response = await apiClient.post('/compare-documents', requestData);
       
@@ -484,6 +493,11 @@ const Documents = () => {
                     </p>
                   </div>
                 )}
+                
+                <div className="mt-8 pt-6 border-t">
+                  <CardTitle className="mb-4">Report Details</CardTitle>
+                  <ReportNameInput reportName={reportName} setReportName={setReportName} />
+                </div>
               </CardContent>
             </Card>
 

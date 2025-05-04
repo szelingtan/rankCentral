@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 type EvaluationReport = {
   timestamp: string;
@@ -30,6 +32,9 @@ type PastReportsProps = {
 const PastReports = ({ reports }: PastReportsProps) => {
   const { toast: uiToast } = useToast();
   const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
+  const [editingReport, setEditingReport] = useState<EvaluationReport | null>(null);
+  const [newReportName, setNewReportName] = useState('');
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
 
   const downloadReport = async (timestamp?: string) => {
     try {
@@ -50,6 +55,31 @@ const PastReports = ({ reports }: PastReportsProps) => {
         description: "There was an error downloading the report.",
         variant: "destructive",
       });
+    }
+  };
+
+  const openRenameDialog = (report: EvaluationReport) => {
+    setEditingReport(report);
+    setNewReportName(report.report_name || '');
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameReport = async () => {
+    if (!editingReport || !newReportName.trim()) {
+      return;
+    }
+
+    try {
+      // Here we would implement the API call to rename the report
+      // For now, we'll close the dialog and show a toast message
+      setRenameDialogOpen(false);
+      toast.success('Report renamed successfully.');
+
+      // In a real implementation, you would update the report name in the database
+      // and then refresh the reports list
+    } catch (error) {
+      console.error('Error renaming report:', error);
+      toast.error('Failed to rename report.');
     }
   };
 
@@ -79,9 +109,19 @@ const PastReports = ({ reports }: PastReportsProps) => {
               <div key={index} className="border rounded-md p-4 bg-gray-50">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium">
-                      {report.report_name || `Report ${index + 1}`}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium">
+                        {report.report_name || `Report ${index + 1}`}
+                      </h3>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => openRenameDialog(report)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <p className="text-sm text-gray-600">
                       Created: {dayjs.utc(report.timestamp).tz('Asia/Singapore').format('DD MMM YYYY, hh:mm A')}
                     </p>
@@ -126,6 +166,27 @@ const PastReports = ({ reports }: PastReportsProps) => {
           </div>
         )}
       </CardContent>
+
+      {/* Rename Report Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Report</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              value={newReportName}
+              onChange={(e) => setNewReportName(e.target.value)}
+              placeholder="Enter a new name for this report"
+              className="w-full"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameReport}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

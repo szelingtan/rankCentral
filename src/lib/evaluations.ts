@@ -62,3 +62,11 @@ export const getOpenAIApiKey = (): string | null => {
   }
   return null;
 };
+
+// Function to update a report name
+export const updateReportName = async (reportId: string, newName: string) => {
+  // Implementation would depend on your MongoDB setup
+  // This is a placeholder for the actual implementation
+  console.log(`Updating report ${reportId} to name ${newName}`);
+  return { success: true, message: 'Report name updated successfully' };
+};

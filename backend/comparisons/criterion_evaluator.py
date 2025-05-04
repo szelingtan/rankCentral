@@ -34,6 +34,8 @@ class CriterionEvaluator:
         )
         
         try:
+            print(f"Using API key (first 4 chars): {self.openai_api_key[:4]}...")
+            
             messages = []
             messages.append({"role": "user", "content": prompt})
 
@@ -70,6 +72,8 @@ class CriterionEvaluator:
             
         except Exception as e:
             print(f"    Error evaluating criterion: {e}")
+            print(f"    API key validity: {'Valid' if len(self.openai_api_key) > 20 else 'Invalid - too short'}")
+            
             # Create placeholder evaluation in case of error
             return {
                 "document_a_score": 0,
@@ -108,4 +112,3 @@ class CriterionEvaluator:
         except (ValueError, TypeError):
             criterion_eval["document_a_score"] = 0
             criterion_eval["document_b_score"] = 0
-

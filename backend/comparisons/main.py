@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--compare_method', choices=['all_pairs', 'mergesort'], default='mergesort', 
                        help='Method for organizing comparisons: all possible pairs or mergesort structure')
     parser.add_argument('--api_key', help='OpenAI API key (overrides .env setting)')
+    parser.add_argument('--report_name', help='Custom name for the report folder')
     
     args = parser.parse_args()
     
@@ -26,6 +27,9 @@ def main():
     if not api_key:
         print("Error: No OpenAI API key provided. Set it in .env file or provide via --api_key argument.")
         return
+    
+    # Get report name if provided
+    report_name = args.report_name or f"Report_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
     
     # Initialize components
     pdf_processor = PDFProcessor(args.pdf_folder)
@@ -70,8 +74,8 @@ def main():
     for i, doc in enumerate(results):
         print(f"{i+1}. {doc}")
     
-    # Generate report
-    report_generator.generate_report(pdf_list, comparison_engine.comparison_results)
+    # Generate report with custom name if provided
+    report_generator.generate_report(pdf_list, comparison_engine.comparison_results, folder_name=report_name)
     
     print("\nEvaluation complete! See the generated Excel report for detailed results.")
 

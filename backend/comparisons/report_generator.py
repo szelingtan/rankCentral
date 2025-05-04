@@ -44,9 +44,12 @@ class ReportGenerator:
     def _create_csv_report(self, report_data, criterion_data, win_counts, criterion_summary, folder_name="csv_reports"):
         """Create the report as separate CSVs within a folder"""
         try:
-            # Ensure folder name exists
+            # Ensure folder name exists and is sanitized
             if not folder_name or folder_name.strip() == '':
                 folder_name = f"csv_reports_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
+            else:
+                # Clean any characters that might cause issues in filenames
+                folder_name = ''.join(c if c.isalnum() or c in '-_ ' else '_' for c in folder_name)
                 
             csv_folder = os.path.join(self.output_dir, folder_name)
             
@@ -99,4 +102,3 @@ class ReportGenerator:
         except Exception as e:
             print(f"Error generating CSV reports: {e}")
             return ""
-
