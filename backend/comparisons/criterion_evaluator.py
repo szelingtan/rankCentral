@@ -28,7 +28,7 @@ class CriterionEvaluator:
         Returns:
             Dictionary containing the evaluation result
         """
-
+        # Initialize OpenAI client with the provided API key
         client = OpenAI(
             api_key = self.openai_api_key,
         )
@@ -88,4 +88,24 @@ class CriterionEvaluator:
         Args:
             criterion_eval: The criterion evaluation dictionary
         """
-        # ... keep existing code (validation logic for required fields)
+        required_fields = [
+            "document_a_score", 
+            "document_b_score", 
+            "winner"
+        ]
+        
+        for field in required_fields:
+            if field not in criterion_eval:
+                if field in ["document_a_score", "document_b_score"]:
+                    criterion_eval[field] = 0
+                else:
+                    criterion_eval[field] = "N/A"
+        
+        # Ensure scores are numeric
+        try:
+            criterion_eval["document_a_score"] = float(criterion_eval["document_a_score"])
+            criterion_eval["document_b_score"] = float(criterion_eval["document_b_score"])
+        except (ValueError, TypeError):
+            criterion_eval["document_a_score"] = 0
+            criterion_eval["document_b_score"] = 0
+

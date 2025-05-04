@@ -1,4 +1,3 @@
-
 from typing import Dict, List, Any, Tuple
 import json
 import os
@@ -10,7 +9,8 @@ class ComparisonEngine:
     """Main engine for comparing multiple documents"""
     
     def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], 
-                openai_api_key: str, pdf_processor=None, use_custom_prompt=False):
+                openai_api_key: str, pdf_processor=None, use_custom_prompt=False,
+                model_name="gpt-4.1-mini"):
         """
         Initialize the comparison engine.
         
@@ -20,6 +20,7 @@ class ComparisonEngine:
             openai_api_key: API key for OpenAI
             pdf_processor: Optional PDFProcessor instance for section extraction
             use_custom_prompt: Whether to use a custom prompt for evaluation
+            model_name: The model to use for evaluation
         """
         self.documents = documents
         self.criteria = criteria
@@ -27,10 +28,11 @@ class ComparisonEngine:
         self.pdf_processor = pdf_processor
         self.use_custom_prompt = use_custom_prompt
         self.comparison_results = []  # Store all pairwise comparison results
+        self.model_name = model_name
         
         # Initialize document comparator for actual comparisons
         self.document_comparator = DocumentComparator(
-            documents, criteria, openai_api_key, pdf_processor, use_custom_prompt
+            documents, criteria, openai_api_key, pdf_processor, use_custom_prompt, model_name
         )
     
     def compare_documents(self, doc1: str, doc2: str) -> Dict[str, Any]:
@@ -158,4 +160,3 @@ class ComparisonEngine:
             return 1
         else:
             return -1
-    

@@ -33,14 +33,21 @@ class ReportGenerator:
         win_counts = ComparisonDataProcessor.calculate_win_counts(pdf_list, comparison_results)
         criterion_summary = ComparisonDataProcessor.prepare_criterion_summary(pdf_list, comparison_results)
         
+        # Ensure folder_name is sanitized for file system use
+        sanitized_folder_name = ''.join(c if c.isalnum() or c in '-_ ' else '_' for c in folder_name)
+        
         # Save report to CSV
         return self._create_csv_report(
-            report_data, criterion_data, win_counts, criterion_summary, folder_name
+            report_data, criterion_data, win_counts, criterion_summary, sanitized_folder_name
         )
     
     def _create_csv_report(self, report_data, criterion_data, win_counts, criterion_summary, folder_name="csv_reports"):
         """Create the report as separate CSVs within a folder"""
         try:
+            # Ensure folder name exists
+            if not folder_name or folder_name.strip() == '':
+                folder_name = f"csv_reports_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
+                
             csv_folder = os.path.join(self.output_dir, folder_name)
             
             # Create the folder if it doesn't exist
@@ -92,3 +99,4 @@ class ReportGenerator:
         except Exception as e:
             print(f"Error generating CSV reports: {e}")
             return ""
+

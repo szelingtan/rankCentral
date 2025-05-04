@@ -113,6 +113,7 @@ def compare_documents():
     custom_prompt = data.get('custom_prompt', '')
     documents_data = data.get('documents', [])
     report_name = data.get('report_name', '')  # Get report name from request
+    custom_api_key = data.get('api_key', '')    # Get custom API key from request
     
     # Check if documents are provided
     if not documents_data or len(documents_data) < 2:
@@ -124,8 +125,8 @@ def compare_documents():
         use_uploaded_pdfs = False
     
     try:
-        # Get the API key from environment
-        api_key = os.getenv("OPENAI_API_KEY")
+        # Use custom API key if provided, otherwise fall back to environment variable
+        api_key = custom_api_key if custom_api_key else os.getenv("OPENAI_API_KEY")
         if not api_key:
             return jsonify({"error": "OpenAI API key not configured"}), 500
         
@@ -174,90 +175,91 @@ def compare_documents():
                     # Use as plain text
                     pdf_contents[doc_name] = doc_content
         
-            # Get criteria
-            criteria = criteria_manager.criteria
-            
-            # Initialize comparison engine
-            comparison_engine = ComparisonEngine(pdf_contents, criteria, api_key, pdf_processor, 
-                                                use_custom_prompt=(evaluation_method == 'prompt'))
+        # Get criteria
+        criteria = criteria_manager.criteria
+        
+        # Initialize comparison engine with the API key
+        comparison_engine = ComparisonEngine(pdf_contents, criteria, api_key, pdf_processor, 
+                                            use_custom_prompt=(evaluation_method == 'prompt'))
 
-            # Initialize report generator
-            report_generator = ReportGenerator(app.config['UPLOAD_FOLDER'])
+        # Initialize report generator
+        report_generator = ReportGenerator(app.config['UPLOAD_FOLDER'])
 
-            # Prepare for comparison
-            pdf_list = list(pdf_contents.keys())
+        # Prepare for comparison
+        pdf_list = list(pdf_contents.keys())
 
-            # Run comparisons with merge sort
-            results = comparison_engine.compare_with_mergesort(pdf_list)
+        # Run comparisons with merge sort
+        results = comparison_engine.compare_with_mergesort(pdf_list)
 
-            # Generate report - this now returns a folder path
-            report_folder_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results, folder_name="csv_reports")
+        # Generate report with the provided report name
+        folder_name = report_name if report_name else f"csv_reports_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        report_folder_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results, folder_name=folder_name)
 
-            # Store report metadata and CSV contents in MongoDB
-            if db is not None:
-                try:
-                    # Get all CSV files in the report folder
-                    csv_files = []
-                    if os.path.exists(report_folder_path):
-                        for filename in os.listdir(report_folder_path):
-                            if filename.endswith('.csv'):
-                                csv_file = {}
-                                file_path = os.path.join(report_folder_path, filename)
-                                # Read file content
-                                with open(file_path, 'r') as file:
-                                    csv_content = file.read()
-                                csv_file[filename] = csv_content
-                                csv_files.append(csv_file)
-                                                    
-                    # Store complete document names to ensure they display properly
-                    report_data = {
-                        "timestamp": datetime.now().isoformat(),
-                        "documents": pdf_list,  # This contains the actual document names
-                        "top_ranked": results[0] if results else None,
-                        "csv_files": csv_files,  # Store the CSV contents directly in MongoDB
-                        "criteria_count": len(criteria),
-                        "evaluation_method": evaluation_method,
-                        "custom_prompt": custom_prompt if evaluation_method == 'prompt' else "",
-                        "report_name": report_name if report_name else f"Report {datetime.now().strftime('%Y%m%d_%H%M%S')}"  # Use custom name or generate default
-                    }
+        # Store report metadata and CSV contents in MongoDB
+        if db is not None:
+            try:
+                # Get all CSV files in the report folder
+                csv_files = []
+                if os.path.exists(report_folder_path):
+                    for filename in os.listdir(report_folder_path):
+                        if filename.endswith('.csv'):
+                            csv_file = {}
+                            file_path = os.path.join(report_folder_path, filename)
+                            # Read file content
+                            with open(file_path, 'r') as file:
+                                csv_content = file.read()
+                            csv_file[filename] = csv_content
+                            csv_files.append(csv_file)
+                                                
+                # Store complete document names to ensure they display properly
+                report_data = {
+                    "timestamp": datetime.now().isoformat(),
+                    "documents": pdf_list,  # This contains the actual document names
+                    "top_ranked": results[0] if results else None,
+                    "csv_files": csv_files,  # Store the CSV contents directly in MongoDB
+                    "criteria_count": len(criteria),
+                    "evaluation_method": evaluation_method,
+                    "custom_prompt": custom_prompt if evaluation_method == 'prompt' else "",
+                    "report_name": report_name if report_name else f"Report {datetime.now().strftime('%Y%m%d_%H%M%S')}"  # Use custom name or generate default
+                }
+                
+                # Get reports collection
+                reports_collection = db["reports"]
+                
+                # Insert new report metadata
+                reports_collection.insert_one(report_data)
+                
+                # Limit to 3 most recent reports (remove older ones)
+                # Find all reports sorted by timestamp
+                all_reports = list(reports_collection.find().sort("timestamp", -1))
+                
+                # Delete any reports beyond the most recent 3
+                if len(all_reports) > 3:
+                    # Get IDs of reports to delete
+                    reports_to_delete = all_reports[3:]
+                    report_ids = [report["_id"] for report in reports_to_delete]
                     
-                    # Get reports collection
-                    reports_collection = db["reports"]
+                    # Delete older reports
+                    reports_collection.delete_many({"_id": {"$in": report_ids}})
                     
-                    # Insert new report metadata
-                    reports_collection.insert_one(report_data)
-                    
-                    # Limit to 3 most recent reports (remove older ones)
-                    # Find all reports sorted by timestamp
-                    all_reports = list(reports_collection.find().sort("timestamp", -1))
-                    
-                    # Delete any reports beyond the most recent 3
-                    if len(all_reports) > 3:
-                        # Get IDs of reports to delete
-                        reports_to_delete = all_reports[3:]
-                        report_ids = [report["_id"] for report in reports_to_delete]
-                        
-                        # Delete older reports
-                        reports_collection.delete_many({"_id": {"$in": report_ids}})
-                        
-                        # Clean up the local folder if needed
-                        for report in reports_to_delete:
-                            if os.path.exists(report["report_path"]):
-                                try:
-                                    import shutil
-                                    shutil.rmtree(report["report_path"])
-                                except Exception as folder_delete_err:
-                                    print(f"Error deleting old report folder: {str(folder_delete_err)}")
-                                    
-                except Exception as e:
-                    print(f"Error storing report history: {str(e)}")
-                    
-                return jsonify({
-                    "message": "Comparison completed successfully",
-                    "ranked_documents": results,
-                    "comparison_details": comparison_engine.comparison_results,
-                    "report_path": report_folder_path
-                })
+                    # Clean up the local folder if needed
+                    for report in reports_to_delete:
+                        if os.path.exists(report["report_path"]):
+                            try:
+                                import shutil
+                                shutil.rmtree(report["report_path"])
+                            except Exception as folder_delete_err:
+                                print(f"Error deleting old report folder: {str(folder_delete_err)}")
+                                
+            except Exception as e:
+                print(f"Error storing report history: {str(e)}")
+                
+        return jsonify({
+            "message": "Comparison completed successfully",
+            "ranked_documents": results,
+            "comparison_details": comparison_engine.comparison_results,
+            "report_path": report_folder_path
+        })
                 
     except Exception as e:
         return jsonify({"error": f"Error during comparison: {str(e)}"}), 500

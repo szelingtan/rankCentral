@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,21 +8,39 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const Settings = () => {
   const [apiKey, setApiKey] = useState('');
   const [savedApiKey, setSavedApiKey] = useState<string | null>(null);
-  const [modelType, setModelType] = useState('gpt-4.1-mini');  // Updated default to gpt-4.1-mini
+  const [modelType, setModelType] = useState('gpt-4.1-mini');
   const [maxDocuments, setMaxDocuments] = useState(10);
   const [maxLength, setMaxLength] = useState(10000);
   const [debugMode, setDebugMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
+
+  // Load saved settings from localStorage on component mount
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('openai_api_key');
+    const storedModelType = localStorage.getItem('model_type');
+    const storedMaxDocuments = localStorage.getItem('max_documents');
+    const storedMaxLength = localStorage.getItem('max_length');
+    const storedDebugMode = localStorage.getItem('debug_mode');
+    const storedEmailNotifications = localStorage.getItem('email_notifications');
+
+    if (storedApiKey) setSavedApiKey(storedApiKey);
+    if (storedModelType) setModelType(storedModelType);
+    if (storedMaxDocuments) setMaxDocuments(parseInt(storedMaxDocuments, 10));
+    if (storedMaxLength) setMaxLength(parseInt(storedMaxLength, 10));
+    if (storedDebugMode) setDebugMode(storedDebugMode === 'true');
+    if (storedEmailNotifications) setEmailNotifications(storedEmailNotifications === 'true');
+  }, []);
 
   const handleSaveApiKey = () => {
     // In a real app, this would be saved securely
     if (!apiKey.trim()) {
-      toast({
+      uiToast({
         title: "API Key Required",
         description: "Please enter a valid API key.",
         variant: "destructive",
@@ -30,16 +48,28 @@ const Settings = () => {
       return;
     }
     
+    // Save to localStorage
+    localStorage.setItem('openai_api_key', apiKey);
     setSavedApiKey(apiKey);
-    toast({
+    
+    toast.success("API Key Saved");
+    uiToast({
       title: "API Key Saved",
       description: "Your API key has been saved successfully.",
     });
   };
 
   const handleSaveSettings = () => {
-    // In a real app, these settings would be saved to the server
-    toast({
+    // Save all settings to localStorage
+    if (savedApiKey) localStorage.setItem('openai_api_key', savedApiKey);
+    localStorage.setItem('model_type', modelType);
+    localStorage.setItem('max_documents', maxDocuments.toString());
+    localStorage.setItem('max_length', maxLength.toString());
+    localStorage.setItem('debug_mode', debugMode.toString());
+    localStorage.setItem('email_notifications', emailNotifications.toString());
+    
+    toast.success("Settings Saved");
+    uiToast({
       title: "Settings Saved",
       description: "Your preferences have been updated successfully.",
     });

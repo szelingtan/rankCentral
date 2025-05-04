@@ -1,3 +1,4 @@
+
 import os
 import argparse
 from dotenv import load_dotenv
@@ -15,14 +16,15 @@ def main():
     parser.add_argument('--pdf_folder', required=True, help='Path to folder containing PDFs to compare')
     parser.add_argument('--compare_method', choices=['all_pairs', 'mergesort'], default='mergesort', 
                        help='Method for organizing comparisons: all possible pairs or mergesort structure')
+    parser.add_argument('--api_key', help='OpenAI API key (overrides .env setting)')
     
     args = parser.parse_args()
     
-    # Use the API key from the .env file
-    api_key = os.getenv("OPENAI_API_KEY")
+    # Use the API key from command line if provided, otherwise from the .env file
+    api_key = args.api_key or os.getenv("OPENAI_API_KEY")
     
     if not api_key:
-        print("Error: No OpenAI API key provided. Set it in .env file.")
+        print("Error: No OpenAI API key provided. Set it in .env file or provide via --api_key argument.")
         return
     
     # Initialize components

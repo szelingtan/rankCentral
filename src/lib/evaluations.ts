@@ -54,3 +54,11 @@ export const getProjectEvaluations = async (projectId: string, userId: string) =
     throw error;
   }
 };
+
+// Function to get API key from localStorage (frontend only)
+export const getOpenAIApiKey = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('openai_api_key');
+  }
+  return null;
+};
