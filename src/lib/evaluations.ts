@@ -2,6 +2,7 @@
 import Evaluation from '../models/Evaluation';
 import Project from '../models/Project';
 import { connectDB } from './db';
+import apiClient from './api-client';
 
 export const createEvaluation = async (
   projectId: string,
@@ -64,9 +65,24 @@ export const getOpenAIApiKey = (): string | null => {
 };
 
 // Function to update a report name
-export const updateReportName = async (reportId: string, newName: string) => {
-  // Implementation would depend on your MongoDB setup
-  // This is a placeholder for the actual implementation
-  console.log(`Updating report ${reportId} to name ${newName}`);
-  return { success: true, message: 'Report name updated successfully' };
+export const updateReportName = async (timestamp: string, newName: string): Promise<{success: boolean, message: string}> => {
+  try {
+    console.log(`Updating report ${timestamp} to name ${newName}`);
+    
+    const response = await apiClient.post('/update-report-name', {
+      timestamp,
+      newName: newName.trim()
+    });
+    
+    return {
+      success: true,
+      message: 'Report name updated successfully'
+    };
+  } catch (error: any) {
+    console.error('Update report name error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to update report name'
+    };
+  }
 };

@@ -3,11 +3,17 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 class ExcelReportFormatter:
-    """Handles the formatting of Excel reports (previously)"""
+    """Handles the formatting of Excel reports"""
     
     @staticmethod
-    def apply_formatting(report_path):
-        """Apply formatting to the Excel report for better readability."""
+    def apply_formatting(report_path, report_name=None):
+        """
+        Apply formatting to the Excel report for better readability.
+        
+        Args:
+            report_path: Path to the Excel file
+            report_name: Optional custom name for the report
+        """
         try:
             workbook = openpyxl.load_workbook(report_path)
             
@@ -54,6 +60,13 @@ class ExcelReportFormatter:
             
             # Add a legend for the scoring colors
             ExcelReportFormatter._add_scoring_legend(workbook)
+            
+            # Add custom report name to first sheet if provided
+            if report_name:
+                first_sheet = workbook[workbook.sheetnames[0]]
+                title_cell = first_sheet.cell(row=1, column=1)
+                title_cell.value = f"Report: {report_name}"
+                title_cell.font = Font(bold=True, size=14)
             
             # Save the formatted workbook
             workbook.save(report_path)

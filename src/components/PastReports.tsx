@@ -10,6 +10,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import apiClient from '@/lib/api-client';
 
 type EvaluationReport = {
   timestamp: string;
@@ -35,6 +36,7 @@ const PastReports = ({ reports }: PastReportsProps) => {
   const [editingReport, setEditingReport] = useState<EvaluationReport | null>(null);
   const [newReportName, setNewReportName] = useState('');
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const downloadReport = async (timestamp?: string) => {
     try {
@@ -70,16 +72,43 @@ const PastReports = ({ reports }: PastReportsProps) => {
     }
 
     try {
-      // Here we would implement the API call to rename the report
-      // For now, we'll close the dialog and show a toast message
-      setRenameDialogOpen(false);
-      toast.success('Report renamed successfully.');
+      setIsRenaming(true);
+      // Call the API to rename the report
+      const response = await apiClient.post('/update-report-name', {
+        timestamp: editingReport.timestamp,
+        newName: newReportName.trim()
+      });
 
-      // In a real implementation, you would update the report name in the database
-      // and then refresh the reports list
-    } catch (error) {
+      if (response.data && response.data.success) {
+        toast.success('Report renamed successfully.');
+        
+        // Close the dialog
+        setRenameDialogOpen(false);
+        
+        // Update the report name in the local state to reflect the change immediately
+        // This will be replaced when the user refreshes the page
+        const reportsCopy = [...reports];
+        const updatedReportIndex = reportsCopy.findIndex(r => r.timestamp === editingReport.timestamp);
+        
+        if (updatedReportIndex !== -1) {
+          reportsCopy[updatedReportIndex] = {
+            ...reportsCopy[updatedReportIndex],
+            report_name: newReportName.trim()
+          };
+        }
+      } else {
+        throw new Error(response.data?.message || 'Unknown error');
+      }
+    } catch (error: any) {
       console.error('Error renaming report:', error);
-      toast.error('Failed to rename report.');
+      toast.error(`Failed to rename report: ${error.message || 'Unknown error'}`);
+      uiToast({
+        title: "Rename failed",
+        description: error.message || "There was an error renaming the report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -183,7 +212,9 @@ const PastReports = ({ reports }: PastReportsProps) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleRenameReport}>Save</Button>
+            <Button onClick={handleRenameReport} disabled={isRenaming}>
+              {isRenaming ? "Saving..." : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

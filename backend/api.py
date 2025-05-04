@@ -20,7 +20,7 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 # Allow CORS for all routes to ensure frontend can communicate with backend
-CORS(app, resources={r"/api/*": {"origins": os.getenv("FE_URL")}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 # Use a temporary directory for PDF storage
 UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'pdf_comparison_uploads')
@@ -128,7 +128,7 @@ def compare_documents():
         # Use custom API key if provided, otherwise fall back to environment variable
         api_key = custom_api_key if custom_api_key else os.getenv("OPENAI_API_KEY")
         if not api_key:
-            return jsonify({"error": "OpenAI API key not configured"}), 500
+            return jsonify({"error": "OpenAI API key not configured"}), 401
         
         # Initialize components
         pdf_processor = PDFProcessor(app.config['UPLOAD_FOLDER'])
@@ -385,6 +385,50 @@ def download_specific_report(timestamp):
     except Exception as e:
         print(f"Error in download_specific_report: {str(e)}")
         return jsonify({"error": f"Error downloading report: {str(e)}"}), 500
+
+@app.route('/api/update-report-name', methods=['POST'])
+def update_report_name():
+    """Endpoint to update the name of a report"""
+    if not db:
+        return jsonify({"error": "Database not connected"}), 500
+    
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
+    timestamp = data.get('timestamp')
+    new_name = data.get('newName')
+    
+    if not timestamp or not new_name:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    try:
+        # Get reports collection
+        reports_collection = db["reports"]
+        
+        # Update the report name
+        result = reports_collection.update_one(
+            {"timestamp": timestamp},
+            {"$set": {"report_name": new_name}}
+        )
+        
+        if result.modified_count > 0:
+            return jsonify({
+                "success": True,
+                "message": "Report name updated successfully"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Report not found or name not changed"
+            }), 404
+            
+    except Exception as e:
+        print(f"Error updating report name: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Error updating report name: {str(e)}"
+        }), 500
 
 @app.route('/api/criteria/default', methods=['GET'])
 def get_default_criteria():
