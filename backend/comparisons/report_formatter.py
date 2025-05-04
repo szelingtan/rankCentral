@@ -3,7 +3,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 class ExcelReportFormatter:
-    """Handles the formatting of Excel reports"""
+    """Handles the formatting of Excel reports (previously)"""
     
     @staticmethod
     def apply_formatting(report_path):
