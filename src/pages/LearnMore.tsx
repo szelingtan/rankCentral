@@ -116,7 +116,7 @@ const LearnMore = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                If you have any questions or need further assistance, please feel free to contact Sze Ling and Callyanne.
+                rankCentral is created for use within the Central Provident Fund Board. Please feel free to approach Sze Ling and Callyanne if you need any assistance.
               </p>
             </CardContent>
           </Card>
