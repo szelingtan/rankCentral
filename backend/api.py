@@ -112,6 +112,7 @@ def compare_documents():
     evaluation_method = data.get('evaluation_method', 'criteria')
     custom_prompt = data.get('custom_prompt', '')
     documents_data = data.get('documents', [])
+    report_name = data.get('report_name', '')  # Get report name from request
     
     # Check if documents are provided
     if not documents_data or len(documents_data) < 2:
@@ -190,7 +191,7 @@ def compare_documents():
             results = comparison_engine.compare_with_mergesort(pdf_list)
 
             # Generate report - this now returns a folder path
-            report_folder_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results)
+            report_folder_path = report_generator.generate_report(pdf_list, comparison_engine.comparison_results, folder_name="csv_reports")
 
             # Store report metadata and CSV contents in MongoDB
             if db is not None:
@@ -216,7 +217,8 @@ def compare_documents():
                         "csv_files": csv_files,  # Store the CSV contents directly in MongoDB
                         "criteria_count": len(criteria),
                         "evaluation_method": evaluation_method,
-                        "custom_prompt": custom_prompt if evaluation_method == 'prompt' else ""
+                        "custom_prompt": custom_prompt if evaluation_method == 'prompt' else "",
+                        "report_name": report_name if report_name else f"Report {datetime.now().strftime('%Y%m%d_%H%M%S')}"  # Use custom name or generate default
                     }
                     
                     # Get reports collection

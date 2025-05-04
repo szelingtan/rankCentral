@@ -17,6 +17,7 @@ type EvaluationReport = {
   criteria_count: number;
   evaluation_method: string;
   custom_prompt?: string;
+  report_name?: string;
 };
 
 dayjs.extend(utc);
@@ -78,7 +79,9 @@ const PastReports = ({ reports }: PastReportsProps) => {
               <div key={index} className="border rounded-md p-4 bg-gray-50">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium">Report {index + 1}</h3>
+                    <h3 className="font-medium">
+                      {report.report_name || `Report ${index + 1}`}
+                    </h3>
                     <p className="text-sm text-gray-600">
                       Created: {dayjs.utc(report.timestamp).tz('Asia/Singapore').format('DD MMM YYYY, hh:mm A')}
                     </p>

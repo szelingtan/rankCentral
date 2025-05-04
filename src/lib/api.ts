@@ -202,7 +202,8 @@ export const createEvaluation = async (
   userId: string,
   name: string,
   fileUrl: string,
-  documentIds: string[]
+  documentIds: string[],
+  reportName?: string // Add optional reportName parameter
 ) => {
   await connectDB();
   
@@ -220,6 +221,7 @@ export const createEvaluation = async (
       project: projectId,
       documents: documentIds,
       owner: userId,
+      reportName: reportName // Store the report name if provided
     });
     
     await evaluation.save();

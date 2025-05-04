@@ -16,6 +16,7 @@ type EvaluationReport = {
   criteria_count: number;
   evaluation_method: string;
   custom_prompt?: string;
+  report_name?: string;
 };
 
 const Results = () => {
@@ -67,7 +68,9 @@ const Results = () => {
             // Ensure documents array is complete
             documents: Array.isArray(report.documents) ? report.documents : [],
             // Ensure top_ranked is a string
-            top_ranked: report.top_ranked || ''
+            top_ranked: report.top_ranked || '',
+            // Include report name if available
+            report_name: report.report_name || ''
           }))
         : [];
       
