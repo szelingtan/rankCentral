@@ -19,10 +19,10 @@ def main():
     parser.add_argument('--api_key', help='OpenAI API key (overrides .env setting)')
     parser.add_argument('--report_name', help='Custom name for the report folder')
     
-    args = parser.parse_args()
+    # args = parser.parse_args()
     
     # Use the API key from command line if provided, otherwise from the .env file
-    api_key = args.api_key or os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     
     if not api_key:
         print("Error: No OpenAI API key provided. Set it in .env file or provide via --api_key argument.")

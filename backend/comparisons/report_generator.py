@@ -5,7 +5,6 @@ from typing import List, Dict
 
 from .data_processor import ComparisonDataProcessor
 from .report_config import SHEET_NAMES
-from .report_formatter import ExcelReportFormatter
 
 class ReportGenerator:
     """
