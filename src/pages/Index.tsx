@@ -75,7 +75,7 @@ const Index = () => {
               </div>
               <h3 className="text-xl font-semibold mb-2 text-gray-800">Define Criteria</h3>
               <p className="text-gray-600">
-                Set custom ranking criteria with specific weightages or use our default rubrics
+                Set custom ranking criteria with specific weightage or use our default rubrics
               </p>
             </div>
             
@@ -98,7 +98,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <RankCentralLogo className="text-white" />
-            <p className="text-gray-400 mt-2">© 2025 rankCentral. All rights reserved.</p>
+            <p className="text-gray-400 mt-2">© 2025 rankCentral. Central Provident Fund Board.</p>
           </div>
         </div>
       </footer>
