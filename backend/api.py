@@ -113,7 +113,8 @@ def compare_documents():
     custom_prompt = data.get('custom_prompt', '')
     documents_data = data.get('documents', [])
     report_name = data.get('report_name', '')  # Get report name from request
-    custom_api_key = data.get('api_key', '')    # Get custom API key from request
+    # custom_api_key = data.get('api_key', '')    
+    # Get custom API key from request
     
     # Check if documents are provided
     if not documents_data or len(documents_data) < 2:
@@ -126,7 +127,7 @@ def compare_documents():
     
     try:
         # Use custom API key if provided, otherwise fall back to environment variable
-        api_key = custom_api_key if custom_api_key else os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             return jsonify({"error": "OpenAI API key not configured"}), 401
         
