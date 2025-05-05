@@ -129,7 +129,10 @@ def compare_documents():
         # Use custom API key if provided, otherwise fall back to environment variable
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
+            print("ERROR: OpenAI API key not found in environment variables")
             return jsonify({"error": "OpenAI API key not configured"}), 401
+        
+        print(f"OpenAI API key found: {api_key[:8]}...")
         
         # Initialize components
         pdf_processor = PDFProcessor(app.config['UPLOAD_FOLDER'])
