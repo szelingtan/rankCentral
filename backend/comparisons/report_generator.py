@@ -2,6 +2,8 @@
 import os
 import pandas as pd
 from typing import List, Dict
+import time
+import re
 
 from .data_processor import ComparisonDataProcessor
 from .report_config import SHEET_NAMES
@@ -9,10 +11,20 @@ from .report_config import SHEET_NAMES
 class ReportGenerator:
     """
     Generates detailed reports from comparison results.
-    This class coordinates the data processing and report formatting.
+    
+    This class coordinates the data processing and report formatting by:
+    1. Processing raw comparison data into structured formats
+    2. Generating CSV files for different aspects of the comparison
+    3. Managing file and folder creation for reports
     """
     
     def __init__(self, output_dir: str):
+        """
+        Initialize the report generator with an output directory.
+        
+        Args:
+            output_dir: Directory where reports will be saved
+        """
         self.output_dir = output_dir
     
     def generate_report(self, pdf_list: List[str], comparison_results: List[Dict], folder_name: str = "csv_reports") -> str:
@@ -27,6 +39,9 @@ class ReportGenerator:
         Returns:
             Path to the generated report
         """
+        print(f"Generating report with folder name: '{folder_name}'")
+        start_time = time.time()
+        
         # Process data for different report sections
         report_data = ComparisonDataProcessor.prepare_report_data(pdf_list, comparison_results)
         criterion_data = ComparisonDataProcessor.prepare_criterion_data(comparison_results)
@@ -34,22 +49,63 @@ class ReportGenerator:
         criterion_summary = ComparisonDataProcessor.prepare_criterion_summary(pdf_list, comparison_results)
         
         # Ensure folder_name is sanitized for file system use
-        sanitized_folder_name = ''.join(c if c.isalnum() or c in '-_ ' else '_' for c in folder_name)
+        sanitized_folder_name = self._sanitize_folder_name(folder_name)
         
         # Save report to CSV
-        return self._create_csv_report(
+        report_path = self._create_csv_report(
             report_data, criterion_data, win_counts, criterion_summary, sanitized_folder_name
         )
+        
+        end_time = time.time()
+        print(f"Report generation completed in {end_time - start_time:.2f} seconds")
+        
+        return report_path
+    
+    def _sanitize_folder_name(self, folder_name: str) -> str:
+        """
+        Sanitize folder name to ensure it's valid for file systems.
+        
+        Args:
+            folder_name: Original folder name
+            
+        Returns:
+            Sanitized folder name
+        """
+        if not folder_name or folder_name.strip() == '':
+            return f"csv_reports_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Remove invalid characters
+        sanitized = re.sub(r'[^\w\s-]', '_', folder_name)
+        
+        # Replace spaces with underscores if desired
+        # sanitized = sanitized.replace(' ', '_')
+        
+        # Ensure the name doesn't start with a dash
+        sanitized = sanitized.lstrip('-')
+        
+        # Limit length
+        if len(sanitized) > 50:
+            sanitized = sanitized[:47] + '...'
+        
+        return sanitized
     
     def _create_csv_report(self, report_data, criterion_data, win_counts, criterion_summary, folder_name="csv_reports"):
-        """Create the report as separate CSVs within a folder"""
+        """
+        Create the report as separate CSVs within a folder
+        
+        Args:
+            report_data: Overall comparison results
+            criterion_data: Detailed criterion-by-criterion analysis
+            win_counts: Count of wins per document
+            criterion_summary: Summary of scores per criterion
+            folder_name: Name for the folder containing CSV files
+            
+        Returns:
+            Path to the created folder
+        """
         try:
             # Ensure folder name exists and is sanitized
-            if not folder_name or folder_name.strip() == '':
-                folder_name = f"csv_reports_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
-            else:
-                # Clean any characters that might cause issues in filenames
-                folder_name = ''.join(c if c.isalnum() or c in '-_ ' else '_' for c in folder_name)
+            folder_name = self._sanitize_folder_name(folder_name)
                 
             csv_folder = os.path.join(self.output_dir, folder_name)
             
@@ -58,6 +114,10 @@ class ReportGenerator:
                 os.makedirs(csv_folder)
             
             csv_files = []
+            
+            # Add API key validation message to report data
+            # This helps users identify API key issues
+            api_key_status_included = False
             
             # Main comparisons sheet
             if report_data:
@@ -94,8 +154,8 @@ class ReportGenerator:
                 df_criterion.to_csv(scores_file, index=False)
                 csv_files.append(scores_file)
             
-            print(f"\nDetailed comparison reports saved to database")
-            print(f"Created {len(csv_files)} CSV files in folder '{folder_name}'")
+            print(f"\nDetailed comparison reports saved to folder: {folder_name}")
+            print(f"Created {len(csv_files)} CSV files")
             
             return csv_folder
             

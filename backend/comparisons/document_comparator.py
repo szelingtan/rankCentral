@@ -1,12 +1,21 @@
+
 from typing import Dict, List, Any, Tuple
 import tiktoken
 from .criterion_evaluator import CriterionEvaluator
 from .prompt_generator import PromptGenerator
 
 class DocumentComparator:
-    """Handles the comparison between two documents across multiple criteria"""
+    """
+    Handles the comparison between two documents across multiple criteria
     
-    def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], openai_api_key: str, pdf_processor=None, use_custom_prompt=False, model_name="gpt-4.1-mini"):
+    This class:
+    1. Coordinates the evaluation of each criterion
+    2. Manages token counting to stay within API limits
+    3. Aggregates results to determine overall winners
+    """
+    
+    def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], openai_api_key: str, 
+                 pdf_processor=None, use_custom_prompt=False, model_name="gpt-4.1-mini"):
         """
         Initialize the document comparator.
         
@@ -25,8 +34,31 @@ class DocumentComparator:
         self.use_custom_prompt = use_custom_prompt
         self.model_name = model_name
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")  # Use gpt-4 encoding for token counting
+        
+        # Validate API key before proceeding
+        self._validate_api_key()
+        
+        # Initialize components
         self.criterion_evaluator = CriterionEvaluator(openai_api_key, model_name)
         self.prompt_generator = PromptGenerator()
+    
+    def _validate_api_key(self) -> bool:
+        """
+        Validate that the API key is properly formatted.
+        
+        Returns:
+            Boolean indicating whether the API key appears valid
+        """
+        # Basic validation - should be a non-empty string of sufficient length
+        is_valid = (
+            isinstance(self.openai_api_key, str) and 
+            len(self.openai_api_key) > 20  # OpenAI API keys are typically longer than this
+        )
+        
+        if not is_valid:
+            print(f"WARNING: API key appears invalid in DocumentComparator (length: {len(self.openai_api_key)})")
+        
+        return is_valid
     
     def compare(self, doc1_name: str, doc2_name: str) -> Dict[str, Any]:
         """
@@ -44,14 +76,29 @@ class DocumentComparator:
         doc_a_weighted_score = 0
         doc_b_weighted_score = 0
         
+        if not self._validate_api_key():
+            # If API key is invalid, return an error result
+            error_msg = "Invalid OpenAI API key"
+            return {
+                "document_a": doc1_name,
+                "document_b": doc2_name,
+                "winner": "Error",
+                "error": error_msg,
+                "evaluation_details": {
+                    "criterion_evaluations": [],
+                    "overall_scores": {"document_a": 0, "document_b": 0},
+                    "overall_winner": "Error",
+                    "explanation": error_msg
+                },
+                "criterion_scores": {}
+            }
+        
         # Process each criterion individually
         for criterion in self.criteria:
-            print(f"Processing criterion: {criterion}")
+            print(f"Processing criterion: {criterion['name']}")
             criterion_name = criterion['name']
             criterion_weight = criterion['weight']
             criterion_id = criterion.get('id', '')
-            
-            print(f"  Evaluating criterion: {criterion_name}")
             
             # Get full document content for this criterion
             doc1_content = self.documents[doc1_name]

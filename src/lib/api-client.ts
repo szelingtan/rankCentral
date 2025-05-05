@@ -2,23 +2,32 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-// Track shown errors to prevent duplicates
+/**
+ * Set of already shown errors to prevent duplicate toasts
+ * This improves user experience by avoiding error message spam
+ */
 const shownErrors = new Set();
 
-// Create an axios instance for backend calls with proper error handling
+/**
+ * API client configuration
+ * Creates an axios instance with proper error handling and logging
+ */
 const apiClient = axios.create({
   // Use environment variable with fallback
   baseURL: import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com/',
-  timeout: 300000, // 300 seconds timeout
+  timeout: 300000, // 5 minute timeout for longer operations
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Add a request interceptor for better logging and error handling
+/**
+ * Request interceptor
+ * Ensures proper API URL formatting and logs outgoing requests
+ */
 apiClient.interceptors.request.use(
   (config) => {
-    // Make sure API routes have /api prefix
+    // Ensure API routes have /api prefix
     if (!config.url?.startsWith('/api/')) {
       config.url = `/api${config.url?.startsWith('/') ? config.url : `/${config.url}`}`;
     }
@@ -32,7 +41,10 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Helper function to show toast without duplicates
+/**
+ * Helper function to show unique toast messages
+ * Prevents duplicate error messages from appearing
+ */
 const showUniqueToast = (message, options) => {
   const errorKey = `${options.id || ''}:${message}`;
   
@@ -51,7 +63,10 @@ const showUniqueToast = (message, options) => {
   }, (options.duration || 5000) + 1000);
 };
 
-// Add a response interceptor with better error handling
+/**
+ * Response interceptor
+ * Provides detailed error handling and logging for API responses
+ */
 apiClient.interceptors.response.use(
   (response) => {
     // Log successful responses (can be disabled in production)
@@ -66,12 +81,36 @@ apiClient.interceptors.response.use(
       // Add more detailed diagnostic information
       console.log('Current API URL:', apiClient.defaults.baseURL);
       console.log('Check if your backend server is running at this URL');
-      console.log('If using a different port, update VITE_API_URL in your .env file');
+      
+      const baseUrl = apiClient.defaults.baseURL || 'Unknown URL';
+      
+      // Show helpful error message for connection issues
+      showUniqueToast(`Backend server not available at ${baseUrl}. Please check server status.`, {
+        id: 'backend-connection-error',
+        duration: 8000,
+      });
       
       return Promise.reject({
         isConnectionError: true,
         message: 'Backend server not available',
         originalError: error
+      });
+    }
+    
+    // Handle authorization errors (typically API key issues)
+    if (error.response?.status === 401) {
+      console.error('API authorization error:', error.response?.data);
+      
+      showUniqueToast(`Authorization error: API key may be invalid or not properly configured on the server.`, {
+        id: 'api-auth-error',
+        duration: 8000,
+      });
+      
+      return Promise.reject({
+        status: 401,
+        message: 'API key authorization failed',
+        originalError: error,
+        isConnectionError: false
       });
     }
     
@@ -99,7 +138,10 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Helper function to check if backend is running
+/**
+ * Helper function to check if backend is running and configured properly
+ * Provides detailed diagnostics about the backend status
+ */
 export const checkBackendHealth = async () => {
   try {
     console.log('Checking backend health at:', apiClient.defaults.baseURL);
@@ -108,6 +150,9 @@ export const checkBackendHealth = async () => {
     
     // Verify that the response has the expected structure
     if (response.data && typeof response.data === 'object') {
+      // Check if OpenAI API key is configured
+      const openaiApiConfigured = response.data?.diagnostics?.openai_api === 'configured';
+      
       // Return detailed health information
       return {
         isHealthy: response.data?.status === 'healthy',
@@ -115,7 +160,10 @@ export const checkBackendHealth = async () => {
         error: null,
         timestamp: response.data?.timestamp,
         version: response.data?.version,
-        diagnostics: response.data?.diagnostics || {}
+        diagnostics: {
+          ...response.data?.diagnostics || {},
+          openaiApiConfigured
+        }
       };
     }
     
@@ -132,6 +180,7 @@ export const checkBackendHealth = async () => {
     
     // Extract more detailed error info
     const errorMsg = error.originalError?.response?.data?.message || error.message || 'Unknown error';
+    const statusCode = error.originalError?.response?.status || 'unknown';
     
     return {
       isHealthy: false,
@@ -139,7 +188,8 @@ export const checkBackendHealth = async () => {
       error,
       diagnostics: {
         apiUrl: apiClient.defaults.baseURL,
-        errorCode: error.originalError?.code || 'unknown'
+        errorCode: error.originalError?.code || 'unknown',
+        statusCode
       }
     };
   }

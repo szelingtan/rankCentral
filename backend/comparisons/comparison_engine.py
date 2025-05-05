@@ -1,3 +1,4 @@
+
 from typing import Dict, List, Any, Tuple
 import json
 import os
@@ -6,7 +7,14 @@ from .document_comparator import DocumentComparator
 from .mergesort_ranking import mergesort_with_comparator
 
 class ComparisonEngine:
-    """Main engine for comparing multiple documents"""
+    """
+    Main engine for comparing multiple documents
+    
+    This class orchestrates the comparison process by:
+    1. Maintaining the document collection and criteria
+    2. Coordinating pairwise comparisons between documents
+    3. Implementing the merge sort algorithm to rank documents
+    """
     
     def __init__(self, documents: Dict[str, str], criteria: List[Dict[str, Any]], 
                 openai_api_key: str, pdf_processor=None, use_custom_prompt=False,
@@ -30,10 +38,32 @@ class ComparisonEngine:
         self.comparison_results = []  # Store all pairwise comparison results
         self.model_name = model_name
         
+        # Validate API key before proceeding
+        self._validate_api_key()
+        
         # Initialize document comparator for actual comparisons
         self.document_comparator = DocumentComparator(
             documents, criteria, openai_api_key, pdf_processor, use_custom_prompt, model_name
         )
+    
+    def _validate_api_key(self) -> bool:
+        """
+        Validate that the API key is properly formatted.
+        
+        Returns:
+            Boolean indicating whether the API key appears valid
+        """
+        # Basic validation
+        is_valid = (
+            isinstance(self.openai_api_key, str) and 
+            len(self.openai_api_key) > 20  # OpenAI API keys are longer than this
+        )
+        
+        if not is_valid:
+            print(f"WARNING: API key appears invalid (length: {len(self.openai_api_key)})")
+            # Don't log the actual key, just its validity
+        
+        return is_valid
     
     def compare_documents(self, doc1: str, doc2: str) -> Dict[str, Any]:
         """

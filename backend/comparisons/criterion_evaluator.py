@@ -4,7 +4,14 @@ import json
 from openai import OpenAI
 
 class CriterionEvaluator:
-    """Handles the evaluation of a specific criterion using LLM"""
+    """
+    Handles the evaluation of a specific criterion using LLM
+    
+    This class is responsible for:
+    1. Sending prompts to the OpenAI API
+    2. Processing the responses
+    3. Ensuring valid JSON structure in the evaluation results
+    """
     
     def __init__(self, openai_api_key: str, model_name: str = "gpt-4.1-mini"):
         """
@@ -28,13 +35,18 @@ class CriterionEvaluator:
         Returns:
             Dictionary containing the evaluation result
         """
-        # Initialize OpenAI client with the provided API key
-        client = OpenAI(
-            api_key = self.openai_api_key,
-        )
+        # Validate API key before making requests
+        if not self._validate_api_key():
+            print(f"ERROR: Invalid or missing API key (length: {len(self.openai_api_key)})")
+            return self._create_error_evaluation("Invalid or missing API key")
         
+        # Initialize OpenAI client with the provided API key
         try:
-            print(f"Using API key (first 4 chars): {self.openai_api_key[:4]}...")
+            client = OpenAI(
+                api_key = self.openai_api_key,
+            )
+            
+            print(f"Sending prompt to {self.model_name} (first 4 chars of API key: {self.openai_api_key[:4]}...)")
             
             messages = []
             messages.append({"role": "user", "content": prompt})
@@ -71,19 +83,44 @@ class CriterionEvaluator:
             return criterion_eval
             
         except Exception as e:
-            print(f"    Error evaluating criterion: {e}")
-            print(f"    API key validity: {'Valid' if len(self.openai_api_key) > 20 else 'Invalid - too short'}")
+            print(f"ERROR evaluating criterion: {e}")
+            print(f"API key validity: {'Valid' if self._validate_api_key() else 'Invalid'}")
             
             # Create placeholder evaluation in case of error
-            return {
-                "document_a_score": 0,
-                "document_b_score": 0,
-                "document_a_analysis": f"Error during evaluation: {str(e)}",
-                "document_b_analysis": f"Error during evaluation: {str(e)}",
-                "comparative_analysis": "Unable to compare due to error",
-                "reasoning": f"Error occurred: {str(e)}",
-                "winner": "N/A"
-            }
+            return self._create_error_evaluation(f"Error during evaluation: {str(e)}")
+    
+    def _validate_api_key(self) -> bool:
+        """
+        Validate that the API key is properly formatted.
+        
+        Returns:
+            Boolean indicating whether the API key appears valid
+        """
+        # Basic validation - should be a non-empty string of sufficient length
+        return (
+            isinstance(self.openai_api_key, str) and 
+            len(self.openai_api_key) > 20  # OpenAI API keys are typically longer than this
+        )
+    
+    def _create_error_evaluation(self, error_message: str) -> Dict[str, Any]:
+        """
+        Create a standard error evaluation object.
+        
+        Args:
+            error_message: Description of the error
+            
+        Returns:
+            Dictionary with standard error fields
+        """
+        return {
+            "document_a_score": 0,
+            "document_b_score": 0,
+            "document_a_analysis": f"Error: {error_message}",
+            "document_b_analysis": f"Error: {error_message}",
+            "comparative_analysis": f"Unable to compare due to error: {error_message}",
+            "reasoning": f"Error occurred: {error_message}",
+            "winner": "N/A"
+        }
     
     def _validate_criterion_evaluation(self, criterion_eval: Dict[str, Any]) -> None:
         """
