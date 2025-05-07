@@ -28,9 +28,10 @@ dayjs.extend(timezone);
 
 type PastReportsProps = {
   reports: EvaluationReport[];
+  onRenameReport: (timestamp: string, newName: string) => void; 
 };
 
-const PastReports = ({ reports }: PastReportsProps) => {
+const PastReports = ({ reports, onRenameReport }: PastReportsProps) => {
   const { toast: uiToast } = useToast();
   const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
   const [editingReport, setEditingReport] = useState<EvaluationReport | null>(null);
@@ -73,29 +74,22 @@ const PastReports = ({ reports }: PastReportsProps) => {
 
     try {
       setIsRenaming(true);
-      // Call the API to rename the report
-      const response = await apiClient.post('/update-report-name', {
+
+      // Validate payload
+      const data = {
         timestamp: editingReport.timestamp,
         newName: newReportName.trim()
-      });
+      };
+
+      // Call the API to rename the report
+      const response = await apiClient.post('/api/update-report-name', data);
 
       if (response.data && response.data.success) {
         toast.success('Report renamed successfully.');
         
         // Close the dialog
         setRenameDialogOpen(false);
-        
-        // Update the report name in the local state to reflect the change immediately
-        // This will be replaced when the user refreshes the page
-        const reportsCopy = [...reports];
-        const updatedReportIndex = reportsCopy.findIndex(r => r.timestamp === editingReport.timestamp);
-        
-        if (updatedReportIndex !== -1) {
-          reportsCopy[updatedReportIndex] = {
-            ...reportsCopy[updatedReportIndex],
-            report_name: newReportName.trim()
-          };
-        }
+        onRenameReport(editingReport.timestamp, newReportName.trim());
       } else {
         throw new Error(response.data?.message || 'Unknown error');
       }

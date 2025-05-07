@@ -118,7 +118,6 @@ def compare_documents():
     
     # Extract comparison parameters from the request
     criteria_data = data.get('criteria', [])
-    comparison_method = data.get('compare_method', 'mergesort')
     evaluation_method = data.get('evaluation_method', 'criteria')
     custom_prompt = data.get('custom_prompt', '')
     documents_data = data.get('documents', [])
@@ -280,7 +279,7 @@ def compare_documents():
 def download_report():
     """Endpoint to download the generated CSV report bundle as a zip file"""
     try:
-        if not db:
+        if db is None:
             return jsonify({"error": "Database not connected"}), 500
             
         # Get the most recent report path from the database
@@ -415,7 +414,7 @@ def download_specific_report(timestamp):
 @app.route('/api/update-report-name', methods=['POST'])
 def update_report_name():
     """Endpoint to update the name of a report"""
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not connected"}), 500
     
     data = request.json
