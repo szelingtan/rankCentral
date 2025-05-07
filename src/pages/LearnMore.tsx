@@ -67,7 +67,7 @@ const LearnMore = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                After analysis is complete, you'll receive comprehensive results:
+                After analysis is complete, you can download comprehensive CSV file results from the Results page:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600">
                 <li>Overall ranking of documents based on your criteria</li>
@@ -76,7 +76,7 @@ const LearnMore = () => {
                 <li>Downloadable reports for sharing or archiving</li>
               </ul>
               <p className="mt-4 text-gray-600">
-                The Results page contains folders with CSV files which gives insights into the evaluations.
+                Note that you can rename the folders with the comprehensives results
               </p>
             </CardContent>
           </Card>
