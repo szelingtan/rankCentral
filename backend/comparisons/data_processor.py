@@ -120,8 +120,8 @@ class ComparisonDataProcessor:
                 # Create main report entry
                 report_entry = {
                     "Comparison": f"{doc_a} vs {doc_b}",
-                    "Document A Score": doc_a_score,
-                    "Document B Score": doc_b_score,
+                    f"{doc_a} Score": doc_a_score,
+                    f"{doc_b} Score": doc_b_score,
                     "Winner": winner,
                     "Overall Explanation": explanation
                 }

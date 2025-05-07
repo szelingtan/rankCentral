@@ -80,6 +80,8 @@ class PromptGenerator:
            - Justify why one document scores higher than the other
            - Reference specific content from both documents
            - Consider how well each meets the specific requirements of this criterion
+
+        In your analyses, refer to the document names only, do not refer to them as Document A and Document B at all. 
         
         Respond with a JSON object containing these fields:
         {
