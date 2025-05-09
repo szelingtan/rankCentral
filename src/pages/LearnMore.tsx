@@ -44,7 +44,7 @@ const LearnMore = () => {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Define the criteria by which you want your documents to be evaluated:
+                Define the criteria by which you want your documents to be evaluated (3 options):
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-600">
                 <li>Use our pre-defined criteria for common document types</li>
