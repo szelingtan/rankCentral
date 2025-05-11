@@ -5,9 +5,9 @@ from flask_jwt_extended import (
     jwt_required, get_jwt_identity, get_jwt
 )
 from werkzeug.security import check_password_hash
-from backend.utils.db_connection import setup_mongodb_connection
-from backend.models.user import User
-from backend.utils.jwt_utils import jwt_blacklist
+from utils.db_connection import setup_mongodb_connection
+from models.user import User
+from utils.jwt_utils import jwt_blacklist
 
 # Initialize blueprint
 auth_bp = Blueprint('auth', __name__)
