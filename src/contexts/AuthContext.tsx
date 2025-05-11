@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authenticateUser, registerUser, verifyToken } from '../lib/api';
 
 interface User {
   id: string;
@@ -27,8 +26,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const token = localStorage.getItem('authToken');
     if (token) {
       try {
-        const decoded = verifyToken(token);
-        setUser({ id: decoded.id, email: decoded.email });
+        // Decode JWT token
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = JSON.parse(window.atob(base64));
+        
+        // Check if token is expired
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp && decoded.exp < currentTime) {
+          localStorage.removeItem('authToken');
+        } else {
+          setUser({ id: decoded.id, email: decoded.email });
+        }
       } catch (error) {
         localStorage.removeItem('authToken');
       }
@@ -39,9 +48,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { token, user } = await authenticateUser(email, password);
-      localStorage.setItem('authToken', token);
-      setUser(user);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('authToken', data.token);
+      setUser(data.user);
     } catch (error) {
       throw error;
     } finally {
@@ -52,9 +74,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { token, user } = await registerUser(email, password);
-      localStorage.setItem('authToken', token);
-      setUser(user);
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('authToken', data.token);
+      setUser(data.user);
     } catch (error) {
       throw error;
     } finally {
