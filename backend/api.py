@@ -13,7 +13,7 @@ from routes.document import documents_bp
 from routes.criteria import criteria_bp
 
 # Import database connection
-from backend.utils.db_connection import setup_mongodb_connection
+from utils.db_connection import setup_mongodb_connection
 
 # Load environment variables
 load_dotenv()
