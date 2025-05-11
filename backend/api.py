@@ -29,7 +29,7 @@ def create_app():
     db = setup_mongodb_connection()
     
     # Configure uploads folder
-    from backend.utils.file_utils import setup_upload_folder
+    from utils.file_utils import setup_upload_folder
     app.config['UPLOAD_FOLDER'] = setup_upload_folder()
     
     # Configure JWT
@@ -38,7 +38,7 @@ def create_app():
     jwt = JWTManager(app)
     
     # Setup JWT token blocklist
-    from backend.utils.jwt_utils import jwt_blacklist, check_if_token_in_blacklist
+    from utils.jwt_utils import jwt_blacklist, check_if_token_in_blacklist
     jwt.token_in_blocklist_loader(check_if_token_in_blacklist)
     
     # Setup JWT error handlers
