@@ -3,13 +3,29 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import RankCentralLogo from './RankCentralLogo';
 import { Button } from '@/components/ui/button';
-import { BarChart3, FileText, Settings, Home, GitCompare, HelpCircle } from 'lucide-react';
+import { BarChart3, FileText, Settings, Home, GitCompare, HelpCircle, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    navigate('/login');
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
@@ -58,6 +74,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Link>
           </div>
         </nav>
+        {user && (
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">{user.email}</div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout} 
+                className="flex items-center text-red-500 hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile header */}
@@ -86,6 +118,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <HelpCircle className="h-5 w-5" />
             </Link>
           </Button>
+          {user && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleLogout} 
+              className="text-red-500 hover:bg-red-50"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
 
