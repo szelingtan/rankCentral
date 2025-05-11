@@ -6,11 +6,11 @@ from dotenv import load_dotenv
 from datetime import timedelta
 
 # Import blueprints
-from backend.routes.auth import auth_bp
-from backend.routes.health import health_bp
-from backend.routes.reports import reports_bp
-from backend.routes.documents import documents_bp
-from backend.routes.criteria import criteria_bp
+from routes.auth import auth_bp
+from routes.health import health_bp
+from routes.reports import reports_bp
+from routes.document import documents_bp
+from routes.criteria import criteria_bp
 
 # Import database connection
 from backend.utils.db_connection import setup_mongodb_connection
