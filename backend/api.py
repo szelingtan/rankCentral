@@ -42,7 +42,7 @@ def create_app():
     jwt.token_in_blocklist_loader(check_if_token_in_blacklist)
     
     # Setup JWT error handlers
-    from backend.utils.jwt_utils import setup_jwt_error_handlers
+    from utils.jwt_utils import setup_jwt_error_handlers
     setup_jwt_error_handlers(jwt)
     
     # Register blueprints
