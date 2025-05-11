@@ -56,15 +56,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+      const textResponse = await response.text();
+      let data;
+      
+      try {
+        // Try to parse the text as JSON
+        data = JSON.parse(textResponse);
+      } catch (e) {
+        // If parsing fails, throw an error with the raw text
+        console.error('Failed to parse response:', textResponse);
+        throw new Error('Invalid server response: ' + (textResponse || 'Empty response'));
       }
 
-      const data = await response.json();
-      localStorage.setItem('authToken', data.token);
-      setUser(data.user);
-    } catch (error) {
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Login failed');
+      }
+
+      localStorage.setItem('authToken', data.token || data.access_token);
+      setUser(data.user || { id: data.id, email: data.email });
+    } catch (error: any) {
+      console.error('Login error:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -82,15 +93,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+      const textResponse = await response.text();
+      let data;
+      
+      try {
+        // Try to parse the text as JSON
+        data = JSON.parse(textResponse);
+      } catch (e) {
+        // If parsing fails, throw an error with the raw text
+        console.error('Failed to parse response:', textResponse);
+        throw new Error('Invalid server response: ' + (textResponse || 'Empty response'));
       }
 
-      const data = await response.json();
-      localStorage.setItem('authToken', data.token);
-      setUser(data.user);
-    } catch (error) {
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Registration failed');
+      }
+
+      localStorage.setItem('authToken', data.token || data.access_token);
+      setUser(data.user || { id: data.id, email: data.email });
+    } catch (error: any) {
+      console.error('Registration error:', error);
       throw error;
     } finally {
       setLoading(false);
