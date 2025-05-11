@@ -6,7 +6,9 @@ jwt_blacklist = set()
 
 def check_if_token_in_blacklist(jwt_header, jwt_payload):
     """Check if token is in blacklist"""
-    jti = jwt_payload["jti"]
+    jti = jwt_payload.get("jti")
+    if not jti:
+        return False
     return jti in jwt_blacklist
 
 def setup_jwt_error_handlers(jwt):
