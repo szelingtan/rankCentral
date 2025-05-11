@@ -14,7 +14,7 @@ auth_bp = Blueprint('auth', __name__)
 
 # Get database connection
 db = setup_mongodb_connection()
-users_collection = db["users"] if db else None
+users_collection = db["users"] if db is not None else None
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
