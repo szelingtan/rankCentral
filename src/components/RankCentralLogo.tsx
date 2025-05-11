@@ -30,8 +30,8 @@ export const RankCentralLogo: React.FC<{ className?: string; size?: number }> = 
           strokeLinejoin="round" 
         />
       </svg>
-      <span className="font-bold text-brand-primary text-lg ml-1">
-        rank<span className="text-brand-accent">Central</span>
+      <span className="font-bold text-brand-primary text-xl ml-1">
+        rank<span className="text-brand-accent text-xl">Central</span>
       </span>
     </div>
   );
