@@ -66,6 +66,15 @@ class User:
         self.last_login = datetime.now().isoformat()
         return self
     
+    def track_report_creation(self):
+        """Track when a user creates a new report"""
+        # Increment report count if field exists, otherwise initialize it
+        if "total_reports" not in self.usage:
+            self.usage["total_reports"] = 0
+        self.usage["total_reports"] += 1
+        self.usage["last_activity"] = datetime.now().isoformat()
+        return self
+        
     def track_comparison(self, document_count=2):
         """Track a new comparison"""
         self.usage["total_comparisons"] += 1
