@@ -20,7 +20,7 @@ users_collection = db["users"] if db is not None else None
 @auth_bp.route('/register', methods=['POST'])
 def register():
     """Register a new user"""
-    if not users_collection:
+    if users_collection is None:
         return jsonify({"error": "Database not connected"}), 500
         
     try:
@@ -60,7 +60,7 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """User login endpoint"""
-    if not users_collection:
+    if users_collection is None:
         return jsonify({"error": "Database not connected"}), 500
         
     try:

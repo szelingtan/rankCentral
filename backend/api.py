@@ -22,8 +22,16 @@ def create_app():
     """Factory function to create the Flask application"""
     app = Flask(__name__)
     
-    # Configure CORS
-    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+    # load that FE_URL from .env
+    frontend_url = os.environ.get('FE_URL', 'http://localhost:8080')
+    print(f"Allowing CORS for: {frontend_url}")
+
+    # apply CORS (incl. preflights) to all endpoints
+    CORS(app,
+         origins=[frontend_url],
+         supports_credentials=True,
+         methods=["GET","POST","PUT","DELETE","OPTIONS"],
+         allow_headers=["Content-Type","Authorization"])
     
     # Setup MongoDB connection
     db = setup_mongodb_connection()
