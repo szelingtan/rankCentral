@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -41,17 +40,15 @@ const Login = () => {
       });
       navigate('/projects');
     } catch (error: any) {
-      let errorMessage = "Please check your credentials and try again";
+      let errorMessage = "Invalid email or wrong password";
       
-      // Provide more specific error messages based on error type
+      // Further refine error messages if specific information is available
       if (error.message) {
-        if (error.message.includes("Invalid credentials") || 
-            error.message.includes("Invalid email or password")) {
-          errorMessage = "Incorrect email or password. Please try again.";
-        } else if (error.message.includes("User not found")) {
-          errorMessage = "No account found with this email address.";
-        } else {
-          errorMessage = error.message;
+        if (error.message.toLowerCase().includes("user not found")) {
+          errorMessage = "Invalid email address";
+        } else if (error.message.toLowerCase().includes("invalid credentials") || 
+                  error.message.toLowerCase().includes("invalid email or password")) {
+          errorMessage = "Invalid email or wrong password";
         }
       }
       
