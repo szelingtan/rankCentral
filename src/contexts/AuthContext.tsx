@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
@@ -13,6 +12,7 @@ interface AuthContextType {
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  getAuthHeaders: () => { Authorization: string } | {};
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,25 +29,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   const apiUrl = 'https://rankcentral.onrender.com';
+
+  // Helper function to get authorization headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+    return {};
+  };
+
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('authToken');
-    if (token) {
+    const token = localStorage.getItem('access_token');
+    const userJson = localStorage.getItem('user');
+    
+    if (token && userJson) {
       try {
-        // Decode JWT token
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const decoded = JSON.parse(window.atob(base64));
-        
-        // Check if token is expired
-        const currentTime = Date.now() / 1000;
-        if (decoded.exp && decoded.exp < currentTime) {
-          localStorage.removeItem('authToken');
-        } else {
-          setUser({ id: decoded.id, email: decoded.email });
-        }
+        const userData = JSON.parse(userJson);
+        setUser({ id: userData.id, email: userData.email });
       } catch (error) {
-        localStorage.removeItem('authToken');
+        console.error('Error parsing user data:', error);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
       }
     }
     setLoading(false);
@@ -60,29 +65,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (email === DUMMY_USER.email && password === DUMMY_USER.password) {
         console.log('Using dummy credentials for development');
         
-        // Create a simple JWT-like token
-        const payload = {
-          id: DUMMY_USER.id,
-          email: DUMMY_USER.email,
-          exp: Math.floor(Date.now() / 1000) + 86400 // 24 hours
-        };
+        const dummyUser = { id: DUMMY_USER.id, email: DUMMY_USER.email };
         
-        const base64Payload = btoa(JSON.stringify(payload));
-        const dummyToken = `header.${base64Payload}.signature`;
+        // Store dummy tokens
+        localStorage.setItem('access_token', 'dummy_access_token');
+        localStorage.setItem('refresh_token', 'dummy_refresh_token');
+        localStorage.setItem('user', JSON.stringify(dummyUser));
         
-        localStorage.setItem('authToken', dummyToken);
-        setUser({ id: DUMMY_USER.id, email: DUMMY_USER.email });
+        setUser(dummyUser);
         setLoading(false);
         return;
       }
       
       // Regular login flow for non-dummy users
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${apiUrl}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -103,8 +103,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error(data.error || data.message || 'Login failed');
       }
 
-      localStorage.setItem('authToken', data.token || data.access_token);
-      setUser(data.user || { id: data.id, email: data.email });
+      // Store tokens and user info as expected by your backend
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      setUser(data.user);
     } catch (error: any) {
       console.error('Login error:', error);
       throw error;
@@ -121,7 +125,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -141,8 +144,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error(data.error || data.message || 'Registration failed');
       }
 
-      localStorage.setItem('authToken', data.token || data.access_token);
-      setUser(data.user || { id: data.id, email: data.email });
+      // Store tokens and user info
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      setUser(data.user);
     } catch (error: any) {
       console.error('Registration error:', error);
       throw error;
@@ -152,7 +159,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
+    // Call logout API if needed
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      // Optional: Notify server of logout to invalidate token
+      fetch(`${apiUrl}/api/logout`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+      }).catch(err => console.error('Logout API error:', err));
+    }
+    
+    // Clear localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
@@ -165,6 +188,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         isAuthenticated: !!user,
+        getAuthHeaders,
       }}
     >
       {children}
