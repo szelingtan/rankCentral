@@ -68,6 +68,22 @@ const PastReports = ({ reports, onRenameReport }: PastReportsProps) => {
     }
   };
 
+  // Function to handle direct navigation to the export tab
+  const handleDownloadClick = (timestamp: string) => {
+    // First expand the report if it's not already expanded
+    if (expandedReport !== timestamp) {
+      setExpandedReport(timestamp);
+    }
+    
+    // Use setTimeout to ensure the DOM has been updated before trying to click
+    setTimeout(() => {
+      const exportTab = document.querySelector(`[data-report="${timestamp}"] [value="export"]`) as HTMLElement;
+      if (exportTab) {
+        exportTab.click();
+      }
+    }, 100);
+  };
+
   return (
     <div className="space-y-6">
       {reports.map((report) => (
@@ -151,18 +167,7 @@ const PastReports = ({ reports, onRenameReport }: PastReportsProps) => {
                   variant="outline" 
                   size="sm" 
                   className="gap-1 text-brand-primary border-brand-primary"
-                  onClick={() => {
-                    if (expandedReport !== report.timestamp) {
-                      toggleExpand(report.timestamp);
-                    }
-                    // Scroll to the export tab
-                    setTimeout(() => {
-                      const exportTab = document.querySelector(`[data-report="${report.timestamp}"] [value="export"]`);
-                      if (exportTab) {
-                        (exportTab as HTMLElement).click();
-                      }
-                    }, 100);
-                  }}
+                  onClick={() => handleDownloadClick(report.timestamp)}
                 >
                   <DownloadCloud className="h-4 w-4 mr-1" />
                   Download Report

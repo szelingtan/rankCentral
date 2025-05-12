@@ -2,17 +2,12 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, BarChart2, ListOrdered } from "lucide-react";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart2, ListOrdered, Download } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import apiClient from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
+import ExportTab from './ExportTab';
 
 interface ReportVisualizationProps {
   timestamp: string;
@@ -141,28 +136,24 @@ const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisuali
             ) : (
               <div className="space-y-6">
                 <div className="h-64 w-full">
-                  <ChartContainer 
-                    config={{
-                      score: {
-                        label: "Document Score",
-                        color: "#0D6E9A"
-                      }
-                    }}
-                  >
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={csvData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Legend />
-                      <Bar dataKey="score" name="Score" fill="#0D6E9A" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} height={60} tickMargin={10} />
+                      <YAxis width={40} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: 'white', borderRadius: '8px', padding: '8px' }}
+                        labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                      <Bar dataKey="score" name="Score" fill="#0D6E9A" radius={[4, 4, 0, 0]} />
                     </BarChart>
-                  </ChartContainer>
+                  </ResponsiveContainer>
                 </div>
                 
                 <div className="mt-6">
                   <h3 className="font-medium mb-2">Data Table</h3>
-                  <div className="border rounded-lg overflow-hidden">
+                  <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -193,7 +184,7 @@ const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisuali
             ) : (
               <div className="space-y-4">
                 <h3 className="font-medium text-lg">Pairwise Comparison Results</h3>
-                <div className="border rounded-lg overflow-hidden">
+                <div className="border rounded-lg overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -211,7 +202,7 @@ const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisuali
                             <TableCell>{comparison.doc2}</TableCell>
                             <TableCell className="font-medium">{comparison.winner}</TableCell>
                             <TableCell className="hidden md:table-cell">
-                              <div className="max-w-md text-sm text-gray-600">
+                              <div className="max-w-md text-sm text-gray-600 whitespace-normal">
                                 {comparison.reasoning}
                               </div>
                             </TableCell>
@@ -232,22 +223,10 @@ const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisuali
           </TabsContent>
           
           <TabsContent value="export" className="pt-4">
-            <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-md">
-              <FileText size={48} className="text-brand-primary mb-4" />
-              <h3 className="text-lg font-medium mb-2">Export Report Data</h3>
-              <p className="text-sm text-gray-500 mb-4 text-center">
-                Download all data associated with this report as CSV files. 
-                The export includes document comparisons, scores, and analysis.
-              </p>
-              <Button 
-                onClick={handleExportCSV} 
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                <Download size={16} />
-                {isLoading ? "Preparing download..." : "Download CSV Files"}
-              </Button>
-            </div>
+            <ExportTab 
+              isLoading={isLoading} 
+              onExport={handleExportCSV} 
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
