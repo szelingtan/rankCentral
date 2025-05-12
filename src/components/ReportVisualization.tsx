@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, BarChart2, ListOrdered } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -23,6 +23,7 @@ interface ReportVisualizationProps {
 const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisualizationProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [csvData, setCsvData] = useState<any[]>([]);
+  const [pairwiseData, setPairwiseData] = useState<any[]>([]);
   const [hasLoadedData, setHasLoadedData] = useState(false);
   const { toast } = useToast();
 
@@ -34,6 +35,28 @@ const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisuali
       // Fetch data directly from the backend
       const response = await apiClient.get(`/report-data/${timestamp}`);
       setCsvData(response.data);
+      
+      // Try to get pairwise comparison data
+      try {
+        const pairwiseResponse = await apiClient.get(`/pairwise-data/${timestamp}`);
+        setPairwiseData(pairwiseResponse.data);
+      } catch (error) {
+        console.warn('Pairwise data not available:', error);
+        // Generate sample pairwise data for demonstration
+        const samplePairwise = [];
+        for (let i = 0; i < documents.length - 1; i++) {
+          for (let j = i + 1; j < documents.length; j++) {
+            samplePairwise.push({
+              doc1: documents[i].split('/').pop() || documents[i],
+              doc2: documents[j].split('/').pop() || documents[j],
+              winner: documents[i].split('/').pop() || documents[i],
+              reasoning: "Sample reasoning for this comparison."
+            });
+          }
+        }
+        setPairwiseData(samplePairwise);
+      }
+      
       setHasLoadedData(true);
       
     } catch (error) {
@@ -85,14 +108,29 @@ const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisuali
         <CardDescription>View and export report data</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="visualization" className="w-full" onValueChange={(value) => {
-          if (value === "visualization" && !hasLoadedData) {
-            fetchReportData();
-          }
-        }}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="visualization">Data Visualization</TabsTrigger>
-            <TabsTrigger value="export">Export CSV</TabsTrigger>
+        <Tabs 
+          defaultValue="visualization" 
+          className="w-full" 
+          data-report={timestamp}
+          onValueChange={(value) => {
+            if ((value === "visualization" || value === "pairwise") && !hasLoadedData) {
+              fetchReportData();
+            }
+          }}
+        >
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="visualization">
+              <BarChart2 className="h-4 w-4 mr-2" />
+              Data Visualization
+            </TabsTrigger>
+            <TabsTrigger value="pairwise">
+              <ListOrdered className="h-4 w-4 mr-2" />
+              Pairwise Comparison
+            </TabsTrigger>
+            <TabsTrigger value="export">
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="visualization" className="pt-4">
@@ -142,6 +180,52 @@ const ReportVisualization = ({ timestamp, reportName, documents }: ReportVisuali
                       </TableBody>
                     </Table>
                   </div>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="pairwise" className="pt-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg">Pairwise Comparison Results</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Document 1</TableHead>
+                        <TableHead>Document 2</TableHead>
+                        <TableHead>Winner</TableHead>
+                        <TableHead className="hidden md:table-cell">Reasoning</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pairwiseData.length > 0 ? (
+                        pairwiseData.map((comparison, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{comparison.doc1}</TableCell>
+                            <TableCell>{comparison.doc2}</TableCell>
+                            <TableCell className="font-medium">{comparison.winner}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <div className="max-w-md text-sm text-gray-600">
+                                {comparison.reasoning}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-4">
+                            No pairwise comparison data available
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             )}

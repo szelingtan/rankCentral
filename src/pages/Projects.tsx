@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -7,10 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { PlusCircle, Folder, Calendar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { createProject, getUserProjects } from '../lib/api';
+import { createProject, getUserProjects } from '../lib/projects';
 import type { IProject } from '../models/Project';
 
 const Projects = () => {
@@ -19,7 +20,6 @@ const Projects = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newProject, setNewProject] = useState({ name: '', description: '' });
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const fetchProjects = async () => {
@@ -30,11 +30,7 @@ const Projects = () => {
       const fetchedProjects = await getUserProjects(user.id);
       setProjects(fetchedProjects);
     } catch (error) {
-      toast({
-        title: "Error fetching projects",
-        description: "Failed to load your projects. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to load your projects. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -48,11 +44,7 @@ const Projects = () => {
     if (!user) return;
     
     if (!newProject.name.trim()) {
-      toast({
-        title: "Project name required",
-        description: "Please enter a name for your project.",
-        variant: "destructive",
-      });
+      toast.error("Please enter a name for your project.");
       return;
     }
     
@@ -62,16 +54,9 @@ const Projects = () => {
       setNewProject({ name: '', description: '' });
       setIsDialogOpen(false);
       
-      toast({
-        title: "Project created",
-        description: "Your new project has been created successfully.",
-      });
+      toast.success("Your new project has been created successfully.");
     } catch (error) {
-      toast({
-        title: "Error creating project",
-        description: "Failed to create your project. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to create your project. Please try again.");
     }
   };
 

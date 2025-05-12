@@ -144,19 +144,28 @@ const PastReports = ({ reports, onRenameReport }: PastReportsProps) => {
                   className="gap-1"
                   onClick={() => toggleExpand(report.timestamp)}
                 >
-                  {expandedReport === report.timestamp ? 'Hide Details' : 'Show Details'}
+                  {expandedReport === report.timestamp ? 'Hide Details' : 'Report Details'}
                 </Button>
                 
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="gap-1 text-brand-primary border-brand-primary"
-                  asChild
+                  onClick={() => {
+                    if (expandedReport !== report.timestamp) {
+                      toggleExpand(report.timestamp);
+                    }
+                    // Scroll to the export tab
+                    setTimeout(() => {
+                      const exportTab = document.querySelector(`[data-report="${report.timestamp}"] [value="export"]`);
+                      if (exportTab) {
+                        (exportTab as HTMLElement).click();
+                      }
+                    }, 100);
+                  }}
                 >
-                  <a href={`${import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com'}/download-report/${report.timestamp}`} target="_blank" rel="noopener noreferrer">
-                    <DownloadCloud className="h-4 w-4 mr-1" />
-                    Download Report
-                  </a>
+                  <DownloadCloud className="h-4 w-4 mr-1" />
+                  Download Report
                 </Button>
               </div>
               

@@ -134,6 +134,59 @@ def get_report_data(timestamp):
         print(f"Error getting report data: {str(e)}")
         return jsonify({"error": f"Error retrieving report data: {str(e)}"}), 500
 
+@reports_bp.route('/pairwise-data/<timestamp>', methods=['GET'])
+def get_pairwise_data(timestamp):
+    """Endpoint to get pairwise comparison data for a specific report"""
+    try:
+        if db is None:
+            return jsonify({"error": "Database not connected"}), 500
+        
+        # Get reports collection
+        reports_collection = db["reports"]
+        
+        # Find the report with the matching timestamp
+        report = reports_collection.find_one({"timestamp": timestamp})
+        
+        if not report:
+            return jsonify({"error": "Report not found"}), 404
+        
+        # Get path to CSV files
+        csv_folder = report.get("csv_files")
+        if not csv_folder or not os.path.exists(csv_folder):
+            return jsonify({"error": "CSV files not found"}), 404
+        
+        # Check for comparisons CSV which has the detailed comparison data
+        comparisons_csv = os.path.join(csv_folder, "comparisons.csv")
+        if os.path.exists(comparisons_csv):
+            try:
+                df = pd.read_csv(comparisons_csv)
+                # Format for frontend display
+                data = []
+                for _, row in df.iterrows():
+                    doc1 = row.get("Document A", "").split("/")[-1] if "/" in row.get("Document A", "") else row.get("Document A", "")
+                    doc2 = row.get("Document B", "").split("/")[-1] if "/" in row.get("Document B", "") else row.get("Document B", "")
+                    winner = row.get("Winner", "").split("/")[-1] if "/" in row.get("Winner", "") else row.get("Winner", "")
+                    reasoning = row.get("Reasoning", "No reasoning provided")
+                    
+                    data.append({
+                        "doc1": doc1,
+                        "doc2": doc2,
+                        "winner": winner,
+                        "reasoning": reasoning
+                    })
+                return jsonify(data)
+            except Exception as e:
+                print(f"Error reading comparisons CSV: {str(e)}")
+                return jsonify([])  # Return empty list if error
+        else:
+            # If no comparisons file exists, return empty array
+            print(f"Comparisons CSV not found at {comparisons_csv}")
+            return jsonify([])
+    
+    except Exception as e:
+        print(f"Error getting pairwise data: {str(e)}")
+        return jsonify({"error": f"Error retrieving pairwise data: {str(e)}"}), 500
+
 @reports_bp.route('/download-report/<timestamp>', methods=['GET'])
 def download_specific_report(timestamp):
     """Endpoint to download a specific report by timestamp"""
