@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, DownloadCloud, Calendar, Edit, Check } from 'lucide-react';
+import { FileText, Calendar, Edit, Check, FolderPlus, BarChart2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { updateReportName } from '@/lib/evaluations';
 import { toast } from 'sonner';
@@ -157,10 +157,11 @@ const PastReports = ({ reports, onRenameReport }: PastReportsProps) => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="gap-1"
+                  className="gap-1 text-brand-primary border-brand-primary"
                   onClick={() => toggleExpand(report.timestamp)}
                 >
-                  {expandedReport === report.timestamp ? 'Hide Details' : 'Report Details'}
+                  <BarChart2 className="h-4 w-4 mr-1" />
+                  Report Details
                 </Button>
                 
                 <Button 
@@ -169,8 +170,8 @@ const PastReports = ({ reports, onRenameReport }: PastReportsProps) => {
                   className="gap-1 text-brand-primary border-brand-primary"
                   onClick={() => handleDownloadClick(report.timestamp)}
                 >
-                  <DownloadCloud className="h-4 w-4 mr-1" />
-                  Download Report
+                  <FolderPlus className="h-4 w-4 mr-1" />
+                  Add to Project
                 </Button>
               </div>
               
