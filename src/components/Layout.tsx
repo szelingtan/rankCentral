@@ -82,7 +82,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
         {user && (
           <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col items-start space-y-2">
               <div className="text-sm font-medium">{user.email}</div>
               <Button 
                 variant="ghost" 
