@@ -28,10 +28,10 @@ def create_app():
 
     # apply CORS (incl. preflights) to all endpoints
     CORS(app,
-         origins=[frontend_url],
-         supports_credentials=True,
-         methods=["GET","POST","PUT","DELETE","OPTIONS"],
-         allow_headers=["Content-Type","Authorization"])
+        origins=[frontend_url],
+        supports_credentials=True,
+        methods=["GET","POST","PUT","DELETE","OPTIONS"],
+        allow_headers=["Content-Type","Authorization"])
     
     # Setup MongoDB connection
     db = setup_mongodb_connection()
