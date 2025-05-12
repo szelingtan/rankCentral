@@ -3,7 +3,7 @@ import React from 'react';
 
 export const RankCentralLogo: React.FC<{ className?: string; size?: number }> = ({ 
   className = "", 
-  size = 40 
+  size = 30  // Made logo smaller (was 35)
 }) => {
   return (
     <div className={`relative flex items-center ${className}`}>
@@ -30,8 +30,8 @@ export const RankCentralLogo: React.FC<{ className?: string; size?: number }> = 
           strokeLinejoin="round" 
         />
       </svg>
-      <span className="font-bold text-brand-primary text-xl ml-1">
-        rank<span className="text-brand-accent text-xl">Central</span>
+      <span className="font-bold text-brand-primary text-2xl ml-1">
+        rank<span className="text-brand-accent text-2xl">Central</span>
       </span>
     </div>
   );

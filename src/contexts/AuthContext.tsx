@@ -17,6 +17,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Dummy user credentials for development purposes
+const DUMMY_USER = {
+  email: 'demo@example.com',
+  password: 'password123',
+  id: 'dummy-user-id-123'
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +56,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/api/login`, {
+      // For development: check if using dummy credentials
+      if (email === DUMMY_USER.email && password === DUMMY_USER.password) {
+        console.log('Using dummy credentials for development');
+        
+        // Create a simple JWT-like token
+        const payload = {
+          id: DUMMY_USER.id,
+          email: DUMMY_USER.email,
+          exp: Math.floor(Date.now() / 1000) + 86400 // 24 hours
+        };
+        
+        const base64Payload = btoa(JSON.stringify(payload));
+        const dummyToken = `header.${base64Payload}.signature`;
+        
+        localStorage.setItem('authToken', dummyToken);
+        setUser({ id: DUMMY_USER.id, email: DUMMY_USER.email });
+        setLoading(false);
+        return;
+      }
+      
+      // Regular login flow for non-dummy users
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,6 +86,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({ email, password }),
       });
 
+      // First try to parse as text
       const textResponse = await response.text();
       let data;
       

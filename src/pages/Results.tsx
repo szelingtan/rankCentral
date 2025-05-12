@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import PastReports from '@/components/PastReports';
@@ -7,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import apiClient, { checkBackendHealth } from '@/lib/api-client';
+import { Link } from 'react-router-dom';
 
 type EvaluationReport = {
   timestamp: string;
@@ -113,9 +113,16 @@ const Results = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold text-gray-800">Report History</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Report History</h1>
+            <div className="flex mt-2">
+              <Link to="/projects" className="text-brand-primary hover:underline flex items-center gap-1">
+                <span>View Projects</span>
+              </Link>
+            </div>
+          </div>
           <Button 
             onClick={fetchReports} 
             variant="outline" 

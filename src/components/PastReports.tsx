@@ -1,218 +1,192 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Edit } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { FileText, Calendar, Edit, Check, FolderPlus, BarChart2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { updateReportName } from '@/lib/evaluations';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import apiClient from '@/lib/api-client';
+import ReportVisualization from './ReportVisualization';
 
-type EvaluationReport = {
+type Report = {
   timestamp: string;
   documents: string[];
   top_ranked: string;
-  report_path: string;
   criteria_count: number;
   evaluation_method: string;
   custom_prompt?: string;
   report_name?: string;
+  report_path?: string;
 };
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
 type PastReportsProps = {
-  reports: EvaluationReport[];
-  onRenameReport: (timestamp: string, newName: string) => void; 
+  reports: Report[];
+  onRenameReport: (timestamp: string, newName: string) => void;
 };
 
 const PastReports = ({ reports, onRenameReport }: PastReportsProps) => {
-  const { toast: uiToast } = useToast();
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://rankcentral.onrender.com';
-  const [editingReport, setEditingReport] = useState<EvaluationReport | null>(null);
-  const [newReportName, setNewReportName] = useState('');
-  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
-
-  const downloadReport = async (timestamp?: string) => {
-    try {
-      // For download, we need to open in a new window since it's a file
-      const url = timestamp 
-        ? `${apiUrl}/api/download-report/${timestamp}`
-        : `${apiUrl}/api/download-report`;
-      
-      console.log(`Opening download URL: ${url}`);
-      window.open(url, '_blank');
-      
-      toast.info('Download started. Check your downloads folder.');
-    } catch (error) {
-      console.error('Error downloading report:', error);
-      toast.error('Download failed.');
-      uiToast({
-        title: "Download failed",
-        description: "There was an error downloading the report.",
-        variant: "destructive",
-      });
+  const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [newName, setNewName] = useState<string>('');
+  
+  const toggleExpand = (timestamp: string) => {
+    if (expandedReport === timestamp) {
+      setExpandedReport(null);
+    } else {
+      setExpandedReport(timestamp);
     }
   };
-
-  const openRenameDialog = (report: EvaluationReport) => {
-    setEditingReport(report);
-    setNewReportName(report.report_name || '');
-    setRenameDialogOpen(true);
+  
+  const startEditing = (timestamp: string, currentName: string) => {
+    setEditingName(timestamp);
+    setNewName(currentName || '');
   };
-
-  const handleRenameReport = async () => {
-    if (!editingReport || !newReportName.trim()) {
-      return;
-    }
-
+  
+  const saveReportName = async (timestamp: string) => {
     try {
-      setIsRenaming(true);
-
-      // Validate payload
-      const data = {
-        timestamp: editingReport.timestamp,
-        newName: newReportName.trim()
-      };
-
-      // Call the API to rename the report
-      const response = await apiClient.post('/api/update-report-name', data);
-
-      if (response.data && response.data.success) {
-        toast.success('Report renamed successfully.');
-        
-        // Close the dialog
-        setRenameDialogOpen(false);
-        onRenameReport(editingReport.timestamp, newReportName.trim());
+      const result = await updateReportName(timestamp, newName);
+      
+      if (result.success) {
+        onRenameReport(timestamp, newName);
+        toast.success("Report name updated successfully");
       } else {
-        throw new Error(response.data?.message || 'Unknown error');
+        toast.error(result.message || "Failed to update report name");
       }
-    } catch (error: any) {
-      console.error('Error renaming report:', error);
-      toast.error(`Failed to rename report: ${error.message || 'Unknown error'}`);
-      uiToast({
-        title: "Rename failed",
-        description: error.message || "There was an error renaming the report.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRenaming(false);
+    } catch (error) {
+      toast.error("An error occurred while updating the report name");
+    }
+    
+    setEditingName(null);
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      return dayjs(timestamp).format('MMM D, YYYY h:mm A');
+    } catch (e) {
+      return timestamp;
     }
   };
 
-  // Helper function to get actual filename without path and extension
-  const extractFileName = (fullPath: string): string => {
-    // Check if the string looks like a filename
-    if (typeof fullPath !== 'string') return 'Unknown';
+  // Function to handle direct navigation to the export tab
+  const handleDownloadClick = (timestamp: string) => {
+    // First expand the report if it's not already expanded
+    if (expandedReport !== timestamp) {
+      setExpandedReport(timestamp);
+    }
     
-    // Remove any directory path if present
-    const fileName = fullPath.split('/').pop() || fullPath;
-    
-    return fileName;
+    // Use setTimeout to ensure the DOM has been updated before trying to click
+    setTimeout(() => {
+      const exportTab = document.querySelector(`[data-report="${timestamp}"] [value="export"]`) as HTMLElement;
+      if (exportTab) {
+        exportTab.click();
+      }
+    }, 100);
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Past Reports</CardTitle>
-        <CardDescription>
-          View and download your recent document comparison reports
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {Array.isArray(reports) && reports.length > 0 ? (
-          <div className="space-y-4">
-            {reports.map((report, index) => (
-              <div key={index} className="border rounded-md p-4 bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">
-                        {report.report_name || `Report ${index + 1}`}
-                      </h3>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => openRenameDialog(report)}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      Created: {dayjs.utc(report.timestamp).tz('Asia/Singapore').format('DD MMM YYYY, hh:mm A')}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Documents: {Array.isArray(report.documents) && report.documents.length > 0 
-                        ? report.documents.map(doc => extractFileName(doc)).join(', ') 
-                        : 'N/A'}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Top ranked: <span className="font-medium">{extractFileName(report.top_ranked) || 'N/A'}</span>
-                    </p>
-                    {report.evaluation_method && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Evaluation method: <span className="font-medium">{report.evaluation_method}</span>
-                      </p>
-                    )}
-                    {report.criteria_count > 0 && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Criteria used: <span className="font-medium">{report.criteria_count}</span>
-                      </p>
-                    )}
+    <div className="space-y-6">
+      {reports.map((report) => (
+        <Card key={report.timestamp} className="overflow-hidden">
+          <CardHeader className="bg-gray-50 pb-4">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-brand-primary" />
+                {editingName === report.timestamp ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Enter report name"
+                      className="text-base font-medium h-8 w-56"
+                      autoFocus
+                    />
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => saveReportName(report.timestamp)}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1"
-                    onClick={() => downloadReport(report.timestamp)}
-                  >
-                    <Download className="h-4 w-4" />
-                    Download
-                  </Button>
+                ) : (
+                  <CardTitle className="flex items-center gap-2">
+                    {report.report_name || 'Comparison Report'}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-5 w-5 ml-1" 
+                      onClick={() => startEditing(
+                        report.timestamp, 
+                        report.report_name || 'Comparison Report'
+                      )}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  </CardTitle>
+                )}
+              </div>
+              
+              <div className="flex items-center text-sm text-gray-500">
+                <Calendar className="h-4 w-4 mr-1" />
+                {formatTimestamp(report.timestamp)}
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="p-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Documents</h3>
+                  <p className="mt-1">{report.documents.length} document{report.documents.length !== 1 ? 's' : ''}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Top Ranked</h3>
+                  <p className="mt-1">{report.top_ranked ? report.top_ranked.split('/').pop() : 'Not available'}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Evaluation Method</h3>
+                  <p className="mt-1 capitalize">{report.evaluation_method || 'Standard'}</p>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <p>No reports available yet.</p>
-            <p className="text-sm mt-2">
-              Compare documents to generate reports.
-            </p>
-          </div>
-        )}
-      </CardContent>
-
-      {/* Rename Report Dialog */}
-      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Report</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Input 
-              value={newReportName}
-              onChange={(e) => setNewReportName(e.target.value)}
-              placeholder="Enter a new name for this report"
-              className="w-full"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleRenameReport} disabled={isRenaming}>
-              {isRenaming ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
+              
+              <div className="flex flex-wrap gap-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1 text-brand-primary border-brand-primary"
+                  onClick={() => toggleExpand(report.timestamp)}
+                >
+                  <BarChart2 className="h-4 w-4 mr-1" />
+                  Report Details
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1 text-brand-primary border-brand-primary"
+                  onClick={() => handleDownloadClick(report.timestamp)}
+                >
+                  <FolderPlus className="h-4 w-4 mr-1" />
+                  Add to Project
+                </Button>
+              </div>
+              
+              {expandedReport === report.timestamp && (
+                <ReportVisualization 
+                  timestamp={report.timestamp}
+                  reportName={report.report_name}
+                  documents={report.documents}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 
