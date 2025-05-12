@@ -1,6 +1,7 @@
 
 # routes/reports.py
 from flask import Blueprint, jsonify, send_file, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from utils.db_connection import setup_mongodb_connection
 from utils.report_utils import create_zip_from_report_data, format_timestamp
 from datetime import datetime
@@ -16,15 +17,20 @@ reports_bp = Blueprint('reports', __name__)
 db = setup_mongodb_connection()
 
 @reports_bp.route('/download-report', methods=['GET'])
+@jwt_required()  # Add JWT requirement
 def download_report():
     """Endpoint to download the latest report"""
     try:
         if db is None:
             return jsonify({"error": "Database not connected"}), 500
+        
+        # Get current user from JWT token
+        current_user = get_jwt_identity()
+        user_id = current_user.get('id')
             
         # Get the most recent report from the database
         reports_collection = db["reports"]
-        latest_report = reports_collection.find_one({}, sort=[("timestamp", -1)])
+        latest_report = reports_collection.find_one({"user_id" : user_id}, sort=[("timestamp", -1)])
         
         if not latest_report or "csv_files" not in latest_report:
             return jsonify({"error": "Report not found"}), 404
@@ -53,17 +59,22 @@ def download_report():
         return jsonify({"error": f"Error downloading report: {str(e)}"}), 500
 
 @reports_bp.route('/report-history', methods=['GET'])
+@jwt_required()  # Add JWT requirement
 def get_report_history():
     """Endpoint to get the history of past reports (up to 3)"""
     try:
         if db is None:
             return jsonify({"error": "Database not connected"}), 500
+        
+        # Get current user from JWT token
+        current_user = get_jwt_identity()
+        user_id = current_user.get('id')
 
         # Get reports collection
         reports_collection = db["reports"]
         
-        # Get the 3 most recent reports, sorted by timestamp
-        reports = list(reports_collection.find({}, {
+        # Get the 5 most recent reports, sorted by timestamp
+        reports = list(reports_collection.find({"user_id" : user_id}, {
             "_id": 0,  # Exclude MongoDB ID
             "timestamp": 1,
             "documents": 1,
@@ -72,7 +83,7 @@ def get_report_history():
             "criteria_count": 1,
             "evaluation_method": 1,
             "custom_prompt": 1
-        }).sort("timestamp", -1).limit(3))
+        }).sort("timestamp", -1).limit(5))
         
         # Format timestamps
         for report in reports:
@@ -93,11 +104,18 @@ def get_report_data(timestamp):
         if db is None:
             return jsonify({"error": "Database not connected"}), 500
         
+        # Get current user from JWT token
+        current_user = get_jwt_identity()
+        user_id = current_user.get('id')
+        
         # Get reports collection
         reports_collection = db["reports"]
         
-        # Find the report with the matching timestamp
-        report = reports_collection.find_one({"timestamp": timestamp})
+        # Find the report with the matching timestamp AND user_id
+        report = reports_collection.find_one({
+            "timestamp": timestamp,
+            "user_id": user_id  # Add user_id filter
+        })
         
         if not report:
             return jsonify({"error": "Report not found"}), 404
@@ -135,17 +153,25 @@ def get_report_data(timestamp):
         return jsonify({"error": f"Error retrieving report data: {str(e)}"}), 500
 
 @reports_bp.route('/pairwise-data/<timestamp>', methods=['GET'])
+@jwt_required() 
 def get_pairwise_data(timestamp):
     """Endpoint to get pairwise comparison data for a specific report"""
     try:
         if db is None:
             return jsonify({"error": "Database not connected"}), 500
         
+        # Get current user from JWT token
+        current_user = get_jwt_identity()
+        user_id = current_user.get('id')
+        
         # Get reports collection
         reports_collection = db["reports"]
         
-        # Find the report with the matching timestamp
-        report = reports_collection.find_one({"timestamp": timestamp})
+        # Find the report with the matching timestamp AND user_id
+        report = reports_collection.find_one({
+            "timestamp": timestamp,
+            "user_id": user_id  # Add user_id filter
+        })
         
         if not report:
             return jsonify({"error": "Report not found"}), 404
@@ -188,17 +214,25 @@ def get_pairwise_data(timestamp):
         return jsonify({"error": f"Error retrieving pairwise data: {str(e)}"}), 500
 
 @reports_bp.route('/download-report/<timestamp>', methods=['GET'])
+@jwt_required()  # Add JWT requirement
 def download_specific_report(timestamp):
     """Endpoint to download a specific report by timestamp"""
     try:
         if db is None:
             return jsonify({"error": "Database not connected"}), 500
         
+        # Get current user from JWT token
+        current_user = get_jwt_identity()
+        user_id = current_user.get('id')
+        
         # Get reports collection
         reports_collection = db["reports"]
         
-        # Find the report with the matching timestamp
-        report = reports_collection.find_one({"timestamp": timestamp})
+        # Find the report with the matching timestamp AND user_id
+        report = reports_collection.find_one({
+            "timestamp": timestamp,
+            "user_id": user_id  # Add user_id filter
+        })
         
         if not report or "csv_files" not in report:
             return jsonify({"error": "Report not found"}), 404
@@ -226,10 +260,15 @@ def download_specific_report(timestamp):
         return jsonify({"error": f"Error downloading report: {str(e)}"}), 500
 
 @reports_bp.route('/update-report-name', methods=['POST'])
+@jwt_required()  # Add JWT requirement
 def update_report_name():
     """Endpoint to update the name of a report"""
     if db is None:
         return jsonify({"error": "Database not connected"}), 500
+    
+    # Get current user from JWT token
+    current_user = get_jwt_identity()
+    user_id = current_user.get('id')
     
     data = request.json
     if not data:
@@ -245,9 +284,12 @@ def update_report_name():
         # Get reports collection
         reports_collection = db["reports"]
         
-        # Update the report name
+        # Update the report name ONLY if it belongs to the current user
         result = reports_collection.update_one(
-            {"timestamp": timestamp},
+            {
+                "timestamp": timestamp,
+                "user_id": user_id  # Add user_id filter
+            },
             {"$set": {"report_name": new_name}}
         )
         

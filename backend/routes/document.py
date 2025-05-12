@@ -1,6 +1,7 @@
 # routes/documents.py
 import os
 from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import get_jwt_identity
 from comparisons.pdf_processor import PDFProcessor
 from comparisons.criteria_manager import CriteriaManager
 from comparisons.comparison_engine import ComparisonEngine
@@ -52,6 +53,13 @@ def compare_documents():
     """
     Endpoint to compare documents using specified criteria or a custom prompt
     """
+    
+    # Get current user from JWT token
+    current_user = get_jwt_identity()
+    user_id = current_user.get('id')
+    if not user_id:
+        return jsonify({"error": "User not authenticated"}), 401
+    
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -163,6 +171,7 @@ def compare_documents():
                             
                 # Prepare report data
                 report_data = {
+                    "user_id": user_id,  # user_id associates reports with specific user
                     "timestamp": datetime.now().isoformat(),
                     "documents": pdf_list,
                     "top_ranked": results[0] if results else None,
@@ -179,9 +188,9 @@ def compare_documents():
                 reports_collection.insert_one(report_data)
                 
                 # Limit to 3 most recent reports
-                all_reports = list(reports_collection.find().sort("timestamp", -1))
-                if len(all_reports) > 3:
-                    reports_to_delete = all_reports[3:]
+                all_reports = list(reports_collection.find({"user_id": user_id}).sort("timestamp", -1))
+                if len(all_reports) > 5:
+                    reports_to_delete = all_reports[5:]
                     report_ids = [report["_id"] for report in reports_to_delete]
                     reports_collection.delete_many({"_id": {"$in": report_ids}})
                     

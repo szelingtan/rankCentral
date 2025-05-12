@@ -123,3 +123,72 @@ def protected():
         return jsonify({"message": f"Hello, {current_user['email']}! This is a protected route."}), 200
     except Exception as e:
         return jsonify({"error": f"Protected route access failed: {str(e)}"}), 500
+    
+@auth_bp.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    """Get user profile information"""
+    if users_collection is None:
+        return jsonify({"error": "Database not connected"}), 500
+        
+    try:
+        # Get current user from JWT token
+        current_user = get_jwt_identity()
+        user_id = current_user.get('id')
+        
+        # Get user from database
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+            
+        # Remove sensitive information
+        if "password" in user:
+            del user["password"]
+        
+        # Convert MongoDB ObjectId to string
+        user["_id"] = str(user["_id"])
+        
+        return jsonify(user), 200
+        
+    except Exception as e:
+        print(f"Profile retrieval error: {str(e)}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+@auth_bp.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    """Update user profile information"""
+    if users_collection is None:
+        return jsonify({"error": "Database not connected"}), 500
+        
+    try:
+        # Get current user from JWT token
+        current_user = get_jwt_identity()
+        user_id = current_user.get('id')
+        
+        data = request.json
+        if not data:
+            return jsonify({"error": "Invalid JSON data"}), 400
+            
+        # Get user from database
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+            
+        # Update user preferences
+        if "preferences" in data:
+            # Create user object to update
+            user_obj = User.from_dict(user)
+            user_obj.update_preferences(data["preferences"])
+            
+            # Update in database
+            users_collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"preferences": user_obj.preferences}}
+            )
+        
+        return jsonify({"message": "Profile updated successfully"}), 200
+        
+    except Exception as e:
+        print(f"Profile update error: {str(e)}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
