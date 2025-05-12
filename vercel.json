@@ -1,28 +1,5 @@
 {
-    "version": 2,
-    "builds": [
-    {
-        "src": "backend/app.py",
-        "use": "@vercel/python"
-    },
-    {
-        "src": "frontend/**",
-        "use": "@vercel/static"
-    }
-    ],
-    "routes": [
-    {
-        "src": "/api/auth/(.*)",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "dest": "backend/app.py"
-    },
-    {
-        "src": "/api/(.*)",
-        "dest": "backend/app.py"
-    },
-    {
-        "src": "/(.*)",
-        "dest": "/"
-    }
+    "rewrites": [
+        { "source": "/(.*)", "destination": "/" }
     ]
 }
