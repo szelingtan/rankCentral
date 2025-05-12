@@ -1,9 +1,13 @@
+
 # routes/reports.py
 from flask import Blueprint, jsonify, send_file, request
 from utils.db_connection import setup_mongodb_connection
 from utils.report_utils import create_zip_from_report_data, format_timestamp
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import pandas as pd
+import json
+import os
 
 # Initialize blueprint
 reports_bp = Blueprint('reports', __name__)
@@ -81,6 +85,54 @@ def get_report_history():
         return jsonify(reports)
     except Exception as e:
         return jsonify({"error": f"Error retrieving report history: {str(e)}"}), 500
+
+@reports_bp.route('/report-data/<timestamp>', methods=['GET'])
+def get_report_data(timestamp):
+    """Endpoint to get visualization data for a specific report"""
+    try:
+        if db is None:
+            return jsonify({"error": "Database not connected"}), 500
+        
+        # Get reports collection
+        reports_collection = db["reports"]
+        
+        # Find the report with the matching timestamp
+        report = reports_collection.find_one({"timestamp": timestamp})
+        
+        if not report:
+            return jsonify({"error": "Report not found"}), 404
+        
+        # Get path to CSV files
+        csv_folder = report.get("csv_files")
+        if not csv_folder or not os.path.exists(csv_folder):
+            return jsonify({"error": "CSV files not found"}), 404
+        
+        # Check for wins summary CSV which has the most important data
+        wins_csv = os.path.join(csv_folder, "document_wins.csv")
+        if os.path.exists(wins_csv):
+            try:
+                df = pd.read_csv(wins_csv)
+                # Format for visualization
+                data = [{
+                    "name": row["Document"].split("/")[-1] if "/" in row["Document"] else row["Document"],
+                    "score": int(row["Win Count"])
+                } for _, row in df.iterrows()]
+                return jsonify(data)
+            except Exception as e:
+                print(f"Error reading wins CSV: {str(e)}")
+        
+        # Fallback: return basic document list with random scores
+        docs = report.get("documents", [])
+        data = [{
+            "name": doc.split("/")[-1] if "/" in doc else doc,
+            "score": 0  # Default score
+        } for doc in docs]
+        
+        return jsonify(data)
+    
+    except Exception as e:
+        print(f"Error getting report data: {str(e)}")
+        return jsonify({"error": f"Error retrieving report data: {str(e)}"}), 500
 
 @reports_bp.route('/download-report/<timestamp>', methods=['GET'])
 def download_specific_report(timestamp):
