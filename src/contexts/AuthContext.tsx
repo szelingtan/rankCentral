@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+  const apiUrl = 'https://rankcentral.onrender.com';
   useEffect(() => {
     // Check if user is already logged in
     const token = localStorage.getItem('authToken');
