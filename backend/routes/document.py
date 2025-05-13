@@ -27,22 +27,26 @@ def upload_pdfs():
     if not files or files[0].filename == '':
         return jsonify({"error": "No files selected"}), 400
     
-    # Clear upload folder before accepting new files
+    # Get the current user ID from the JWT token
+    current_user = get_jwt_identity()
+    user_id = current_user.get('id')
+
+    # Create a user-specific upload folder
     upload_folder = current_app.config['UPLOAD_FOLDER']
-    if not clear_upload_folder(upload_folder):
-        return jsonify({"error": "Error clearing upload folder"}), 500
-    
+    user_upload_folder = os.path.join(upload_folder, user_id)
+    os.makedirs(user_upload_folder, exist_ok=True)
+
     saved_files = []
     for file in files:
         if file.filename.endswith('.pdf'):
             filename = file.filename
-            file_path = os.path.join(upload_folder, filename)
+            file_path = os.path.join(user_upload_folder, filename)
             file.save(file_path)
-            saved_files.append(filename)
-    
+            saved_files.append(file_path)
+
     if not saved_files:
-        return jsonify({"error": "No PDF files were uploaded"}), 400
-    
+        return jsonify({"error": "No valid PDF files uploaded"}), 400
+
     return jsonify({
         "message": f"Successfully uploaded {len(saved_files)} PDF files",
         "files": saved_files
